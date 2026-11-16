@@ -8,7 +8,7 @@ cd "$(dirname "$0")"
 FW=$(cd ../firmware/osmonauts_controller && pwd)
 CFG=$1; shift
 sed "s|^#include \"config.h\".*|#include \"$FW/$CFG\"|" $FW/osmonauts_controller.ino > /tmp/osmonauts_sim.cpp
-g++ -O2 -std=gnu++17 -w -Imock -I$FW -DSKETCH='"/tmp/osmonauts_sim.cpp"' test.cpp -o /tmp/osmonauts_sim || exit 1
+g++ -O2 -std=gnu++17 -w -DOSMO_SIM -Imock -I$FW -DSKETCH='"/tmp/osmonauts_sim.cpp"' test.cpp -o /tmp/osmonauts_sim || exit 1
 fail=0
 for t in "$@"; do /tmp/osmonauts_sim $t || fail=1; done
 exit $fail

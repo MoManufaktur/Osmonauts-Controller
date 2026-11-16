@@ -105,6 +105,14 @@
   Modified 04 02 2023
   Elias Dörre: prevent flushings between consecutive water tappings, "const" for constants
 
+  Modified 16 11 2026  (version 6.1)
+  Kai Mommsen & Elias Dörre:
+    - ESP32 support (ESP32 4-relay board, config_esp32_relay4.h): WiFi setup portal, web interface,
+      firmware update via web upload or from GitHub releases (SHA-256 checked, automatic rollback),
+      optional daily update check that also counts active devices anonymously, local statistics
+    - Fix: version 6.0 did not compile in the Arduino IDE (automatic function prototypes were inserted
+      before the own data types) - all types moved to osmo_types.h
+
   Modified 15 11 2026  (version 6, code review assisted by Claude)
   Kai Mommsen & Elias Dörre:
     - Project renamed to "Osmonauts – OpenOsmosis Controller"
@@ -125,10 +133,16 @@
 #include "config.h"          // default: Arduino Uno / Nano, no display
 //#include "config_elias.h"  // Elias: Nano, rain sensor on A7, 3 buttons
 //#include "config_kai.h"    // Kai: Arduino Mega, LED ring + OLED
+//#include "config_esp32_relay4.h"  // ESP32 4-relay board: WiFi, web interface, updates
 
 #define PROJECT_NAME "Osmonauts"
-#define FW_VERSION   "6.0"
+#define FW_VERSION   "6.1"
 #define PROJECT_URL  "github.com/MoManufaktur/osmonauts-controller"
+
+#include "osmo_types.h"     // data types - must come before the first function (Arduino IDE prototypes)
+#ifdef OSMO_SIM
+#undef OSMO_NET            // PC simulation (tests/): procedures only, no WiFi
+#endif
 
 // ============================== prototypes ==============================
 void beep(int duration, int frequency = 1000);
@@ -138,12 +152,26 @@ void relaisFilter();
 void relaisInjection();
 void stopRelais();
 
+// relay state for status displays (bit 0 = relais1 ... bit 3 = relais4)
+uint8_t relaisState = 0;
+void relaisWrite(uint8_t pin, uint8_t value) {
+  digitalWrite(pin, value);
+  uint8_t bit = pin == relais1 ? 0 : pin == relais2 ? 1 : pin == relais3 ? 2 : 3;
+  if (value == ON) relaisState |= (1 << bit); else relaisState &= ~(1 << bit);
+}
+
+#ifdef OSMO_NET
+void netSetup();
+void netLoop();
+void netEvent(OsmoEvent e);
+#else
+inline void netEvent(OsmoEvent) {}
+#endif
+
+// true while a firmware update is running: no procedure may start
+bool maintenanceLock = false;
+
 // ============================== timer ==============================
-// Non-blocking timer. Every procedure owns its own timer, so procedures never disturb each other.
-struct Timer {
-  unsigned long start;
-  bool running;
-};
 
 // starts the timer on the first call, returns true once 'duration' [ms] has elapsed (millis() overflow safe)
 bool timerDone(Timer &t, unsigned long duration) {
@@ -164,12 +192,6 @@ void timerReset(Timer &t) {
 }
 
 // ============================== procedure helper ==============================
-// state of one state machine: current step, entry flag (step actions run once) and own timer
-struct Proc {
-  uint8_t state;
-  bool entered;
-  Timer timer;
-};
 
 void procGoto(Proc &p, uint8_t state) {
   p.state = state;
@@ -191,29 +213,9 @@ bool procEntry(Proc &p) {
 }
 
 // ============================== operating mode ==============================
-enum Mode : uint8_t {
-  MODE_IDLE,
-  MODE_TAPPING,
-  MODE_AUTO_FLUSH,
-  MODE_POST_FLUSH,
-  MODE_FILTER_CHANGE,
-  MODE_DISINFECTION,
-  MODE_AQUASTOP
-};
 
 Mode mode = MODE_IDLE;
 
-// feedback states for LED and display
-enum Feedback : uint8_t {
-  FB_IDLE,
-  FB_MEMBRANE_FLUSH,
-  FB_POST_FLUSH,
-  FB_STANDWATER_FLUSH,
-  FB_FILTER,
-  FB_FILTER_CHANGE,
-  FB_DISINFECTION,
-  FB_AQUASTOP
-};
 
 void feedback(Feedback fb);
 void feedbackUpdate();
@@ -259,16 +261,7 @@ Proc disinfectionProc;
   #define BTN34_ON false
 #endif
 
-enum ButtonEvent : uint8_t { BTN_NONE, BTN_SHORT, BTN_LONG };
 
-struct Button {
-  uint8_t pin;
-  bool enabled;
-  bool stable;               // debounced state (HIGH = released)
-  bool reading;              // last raw reading
-  unsigned long lastChange;  // time of last raw change
-  unsigned long pressedAt;   // time of debounced press
-};
 
 Button buttons[4] = {
   { pushbtnPIN1, true,     HIGH, HIGH, 0, 0 },
@@ -336,10 +329,10 @@ const unsigned long intervalTimeUpdate = 1000;
 ////////////////////////////////////////////////////////////////////////////////
 void setup() {
 
-  digitalWrite(relais1, OFF);  // prevents relais from activating after power-on
-  digitalWrite(relais2, OFF);
-  digitalWrite(relais3, OFF);
-  digitalWrite(relais4, OFF);
+  relaisWrite(relais1, OFF);  // prevents relais from activating after power-on
+  relaisWrite(relais2, OFF);
+  relaisWrite(relais3, OFF);
+  relaisWrite(relais4, OFF);
 
   pinMode(relais1, OUTPUT);
   pinMode(relais2, OUTPUT);
@@ -388,6 +381,10 @@ void setup() {
 
   feedback(FB_IDLE);
   beep(100);
+
+#ifdef OSMO_NET
+  netSetup();
+#endif
 }
 
 //////////////////////////// building blocks ////////////////////////////
@@ -499,6 +496,7 @@ void abortCurrentMode() {
   if (mode == MODE_IDLE || mode == MODE_AQUASTOP) return;
 
   Serial.println(F("Stop: current procedure cancelled"));
+  netEvent(EV_STOP);
 
   if (mode == MODE_TAPPING && tapProc.state >= 2) {
     // water was already filtered -> membrane post-flush still makes sense
@@ -522,6 +520,10 @@ void abortCurrentMode() {
 // tapping, filter change and disinfection have to be stopped first.
 void requestMode(Mode m) {
   if (mode == m) return;
+  if (maintenanceLock) {
+    Serial.println(F("Firmware update running - request refused"));
+    return;
+  }
 
   if (mode == MODE_AUTO_FLUSH || mode == MODE_POST_FLUSH) {
     abortCurrentMode();
@@ -562,6 +564,7 @@ void runTapping() {
       msLastFlush = millis();   // prevents flushing between consecutive water tappings (e.g. several bottles)
       postFlushPending = true;  // membrane post-flush after intervalFlushAfterTapping
       Serial.println(F("Water tapping procedure finished"));
+      netEvent(EV_TAP);
       enterIdle();
       break;
   }
@@ -570,6 +573,7 @@ void runTapping() {
 // post-flush of the membrane, started from idle after intervalFlushAfterTapping
 void runPostFlush() {
   if (postFlush()) {
+    netEvent(EV_POST_FLUSH);
     postFlushPending = false;
     msLastAutomaticFlush = millis();
     enterIdle();
@@ -598,6 +602,7 @@ void runAutoFlush() {
       stopRelais();
       msLastAutomaticFlush = millis();
       Serial.println(F("Automatic flush procedure finished"));
+      netEvent(EV_AUTO_FLUSH);
       enterIdle();
       break;
   }
@@ -623,6 +628,7 @@ void runFilterChange() {
       stopRelais();
       msLastAutomaticFlush = millis();
       Serial.println(F("Filter exchange procedure finished"));
+      netEvent(EV_FILTER_CHANGE);
       beep(1000);
       enterIdle();
       break;
@@ -643,10 +649,6 @@ void runFilterChange() {
   7. Final flushes: membrane, standing water and filter process, each intervalFinalFlushes
   8. Long beep: finished. The next tapping always starts with a pre-flush.
 */
-enum DisinfectionStep : uint8_t {
-  DS_START, DS_INJECT_1, DS_MOVE, DS_INJECT_2, DS_PULSE, DS_PAUSE,
-  DS_FINAL_MEMBRANE, DS_FINAL_STANDWATER, DS_FINAL_FILTER, DS_DONE
-};
 
 void runDisinfection() {
   Proc &p = disinfectionProc;
@@ -734,6 +736,7 @@ void runDisinfection() {
       stopRelais();
       msLastAutomaticFlush = millis();
       Serial.println(F("Disinfection procedure finished"));
+      netEvent(EV_DISINFECTION);
       beep(1000);
       enterIdle();
       break;
@@ -746,58 +749,58 @@ void runDisinfection() {
 
 void relaisMembraneFlush() {
   Serial.println(F("  Open relais for membrane flush"));
-  digitalWrite(relais1, ON);
+  relaisWrite(relais1, ON);
   delay(rst);
-  digitalWrite(relais4, ON);
+  relaisWrite(relais4, ON);
   delay(rst);
-  digitalWrite(relais2, OFF);
+  relaisWrite(relais2, OFF);
   delay(rst);
-  digitalWrite(relais3, OFF);
+  relaisWrite(relais3, OFF);
 }
 
 void relaisStandWaterFlush() {
   Serial.println(F("  Open relais for standing water flush"));
-  digitalWrite(relais1, ON);
+  relaisWrite(relais1, ON);
   delay(rst);
-  digitalWrite(relais3, ON);
+  relaisWrite(relais3, ON);
   delay(rst);
-  digitalWrite(relais2, OFF);
+  relaisWrite(relais2, OFF);
   delay(rst);
-  digitalWrite(relais4, OFF);
+  relaisWrite(relais4, OFF);
 }
 
 void relaisFilter() {
   Serial.println(F("  Open relais for filtering"));
-  digitalWrite(relais1, ON);
+  relaisWrite(relais1, ON);
   delay(rst);
-  digitalWrite(relais2, ON);
+  relaisWrite(relais2, ON);
   delay(rst);
-  digitalWrite(relais3, OFF);
+  relaisWrite(relais3, OFF);
   delay(rst);
-  digitalWrite(relais4, OFF);
+  relaisWrite(relais4, OFF);
 }
 
 // disinfection: water supply closed, valve 4 open to release the pressure of the syringe
 void relaisInjection() {
   Serial.println(F("  Open valve 4 to release pressure caused by the syringe"));
-  digitalWrite(relais1, OFF);
+  relaisWrite(relais1, OFF);
   delay(rst);
-  digitalWrite(relais2, OFF);
+  relaisWrite(relais2, OFF);
   delay(rst);
-  digitalWrite(relais3, OFF);
+  relaisWrite(relais3, OFF);
   delay(rst);
-  digitalWrite(relais4, ON);
+  relaisWrite(relais4, ON);
 }
 
 void stopRelais() {
   Serial.println(F("  Stop all relais"));
-  digitalWrite(relais1, OFF);  // water supply first
+  relaisWrite(relais1, OFF);  // water supply first
   delay(rst);
-  digitalWrite(relais2, OFF);
+  relaisWrite(relais2, OFF);
   delay(rst);
-  digitalWrite(relais3, OFF);
+  relaisWrite(relais3, OFF);
   delay(rst);
-  digitalWrite(relais4, OFF);
+  relaisWrite(relais4, OFF);
 }
 
 //////////////////////////// aqua stop ////////////////////////////
@@ -829,6 +832,7 @@ void checkAquaStop() {
     resetAllProcs();
     mode = MODE_AQUASTOP;
     feedback(FB_AQUASTOP);
+    netEvent(EV_AQUASTOP);
     Serial.print(F("AQUA STOP triggered! Controller stopped until reset. Sensor value: "));
     Serial.println(aquaStopValue);
   }
@@ -986,12 +990,16 @@ void beep(int duration, int frequency) {
 //////////////////////////// main loop ////////////////////////////
 void loop() {
 
+#ifdef OSMO_NET
+  netLoop();   // WiFi, web commands, update check - also while aqua stop is active
+#endif
+
 #ifdef DEBUG
   static unsigned long msLastDebug = 0;
   if (millis() - msLastDebug >= 1000) {
     msLastDebug = millis();
     Serial.print(F("Mode: "));
-    Serial.print(mode);
+    Serial.print((int)mode);
     Serial.print(F("  AquaStopValue: "));
     Serial.println(aquaStopValue);
   }
@@ -1019,6 +1027,7 @@ void loop() {
     case MODE_DISINFECTION:  runDisinfection(); break;
 
     case MODE_IDLE:
+      if (maintenanceLock) break;
       if (postFlushPending && millis() - msLastWaterTapping >= intervalFlushAfterTapping) {
         startMode(MODE_POST_FLUSH);
       } else if (millis() - msLastAutomaticFlush >= intervalAutomaticFlush) {
@@ -1030,3 +1039,8 @@ void loop() {
       break;
   }
 }
+
+//////////////////////////// ESP32: WiFi, web interface, updates ////////////////////////////
+#ifdef OSMO_NET
+#include "osmo_esp32.h"
+#endif

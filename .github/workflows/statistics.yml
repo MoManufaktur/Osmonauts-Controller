@@ -1,0 +1,70 @@
+# Osmonauts – daily statistics: archives traffic, release downloads (= active ESP32 devices)
+# and build reports on the branch "traffic-stats", then publishes the statistics page on GitHub Pages:
+#   https://momanufaktur.github.io/Osmonauts-Controller/
+#
+# Setup (once):
+#   1. Settings → Pages → Build and deployment → Source: "GitHub Actions"
+#   2. Optional, for page views and clones: fine-grained personal access token for this repository with
+#      repository permission "Administration: Read-only" → Settings → Secrets and variables → Actions
+#      → New repository secret TRAFFIC_TOKEN. Without it, devices, downloads and build reports are still counted.
+#   3. Actions → "Statistics" → Run workflow
+name: Statistics
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+concurrency:
+  group: statistics
+  cancel-in-progress: false
+jobs:
+  statistics:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get data branch
+        run: |
+          if git ls-remote --exit-code --heads origin traffic-stats >/dev/null; then
+            git fetch -q origin traffic-stats
+            git worktree add data origin/traffic-stats
+            git -C data checkout -q -B traffic-stats
+          else
+            git worktree add --orphan -b traffic-stats data
+          fi
+          mkdir -p data/traffic
+
+      - name: Archive statistics
+        env:
+          REPO: ${{ github.repository }}
+          GITHUB_TOKEN: ${{ github.token }}
+          TRAFFIC_TOKEN: ${{ secrets.TRAFFIC_TOKEN }}
+        run: python3 tools/traffic_archive.py data/traffic
+
+      - name: Commit data
+        run: |
+          cd data
+          git config user.name "osmonauts-stats-bot"
+          git config user.email "osmonauts-stats-bot@users.noreply.github.com"
+          git add traffic
+          git diff --cached --quiet || git commit -q -m "statistics $(date -u +%F)"
+          git push -q origin traffic-stats
+
+      - name: Build page
+        run: |
+          python3 tools/stats_page.py data/traffic site "${{ github.repository }}"
+          cp docs/osmonauts_spuelvorgaenge_3d.html site/animation.html
+          cp docs/osmonauts_blockschaltbild.png site/blockschaltbild.png
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+      - id: deploy
+        uses: actions/deploy-pages@v4

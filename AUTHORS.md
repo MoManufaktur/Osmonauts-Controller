@@ -23,3 +23,9 @@ Version 6 (2026) was created by Kai Mommsen & Elias Dörre after a code review a
 
 - `LED.h` – based on "Multi-tasking the Arduino – Part 3" by Bill Earl, Adafruit Industries
 - `docs/osmonauts_spuelvorgaenge_3d.html` – embeds three.js r158 (MIT License, © three.js authors)
+- ESP32 version (linked as libraries, not included in this repository):
+  - WiFiManager by tzapu – MIT License
+  - ESPAsyncWebServer and AsyncTCP by the ESP32Async organisation – LGPL-3.0.
+    The complete source code of the Osmonauts firmware is public, so everybody can rebuild the
+    firmware with a modified version of these libraries (LGPL-3.0 section 4).
+  - Arduino core for the ESP32 by Espressif – LGPL-2.1
