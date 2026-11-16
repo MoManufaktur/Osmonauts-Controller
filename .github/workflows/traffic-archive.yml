@@ -1,0 +1,42 @@
+# Osmonauts – archives GitHub traffic (views, clones, referrers) every day.
+# GitHub itself only keeps 14 days. Data is stored on the branch "traffic-stats" in traffic/*.json.
+#
+# Setup (once):
+#   1. Create a fine-grained personal access token for this repository with
+#      repository permission "Administration: Read-only".
+#   2. Repository → Settings → Secrets and variables → Actions → New secret: TRAFFIC_TOKEN
+#   3. Actions → "Traffic archive" → Run workflow (first run creates the branch)
+name: Traffic archive
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  archive:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Switch to data branch
+        run: |
+          git config user.name "osmonauts-traffic-bot"
+          git config user.email "osmonauts-traffic-bot@users.noreply.github.com"
+          cp tools/traffic_archive.py /tmp/traffic_archive.py
+          if git ls-remote --exit-code --heads origin traffic-stats; then
+            git checkout traffic-stats
+          else
+            git checkout --orphan traffic-stats && git rm -rf . -q && mkdir -p traffic
+          fi
+      - name: Fetch and merge traffic data
+        env:
+          GH_TOKEN: ${{ secrets.TRAFFIC_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: python3 /tmp/traffic_archive.py traffic
+      - name: Commit
+        run: |
+          git add traffic
+          git diff --cached --quiet || git commit -m "traffic $(date -u +%F)"
+          git push origin traffic-stats

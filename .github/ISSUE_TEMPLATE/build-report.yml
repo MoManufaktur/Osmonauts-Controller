@@ -1,0 +1,63 @@
+name: "Osmonauts build report – I built one!"
+description: "Show your Osmonauts build. Helps us see where and how the controller is used. / Zeig uns deinen Nachbau."
+title: "[Build] "
+labels: ["build-report"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for building an **Osmonauts – OpenOsmosis Controller**! Every report shows us where the project is used.
+        Danke für deinen Nachbau! Jeder Bericht zeigt uns, wo Osmonauts im Einsatz ist.
+        **Please do not post personal data (address, phone, e-mail).**
+  - type: input
+    id: region
+    attributes:
+      label: Country / region (optional) · Land / Region
+      placeholder: "e.g. Germany, Schleswig-Holstein"
+  - type: dropdown
+    id: board
+    attributes:
+      label: Board
+      options: ["Arduino Uno", "Arduino Nano", "Arduino Mega 2560", "other / andere"]
+    validations:
+      required: true
+  - type: dropdown
+    id: config
+    attributes:
+      label: Configuration
+      options: ["config.h", "config_elias.h", "config_kai.h", "own config / eigene"]
+  - type: input
+    id: version
+    attributes:
+      label: Firmware version (shown at start, e.g. 6.0)
+  - type: checkboxes
+    id: features
+    attributes:
+      label: Features in use
+      options:
+        - label: Aqua stop – rain sensor
+        - label: Aqua stop – water level sensor
+        - label: LED ring (WS2812B)
+        - label: OLED display
+        - label: 4 buttons (disinfection / filter exchange)
+  - type: textarea
+    id: system
+    attributes:
+      label: Your RO system (membrane, filters, valves) · Deine Anlage
+  - type: textarea
+    id: changes
+    attributes:
+      label: Modifications – link if you published them · Änderungen, ggf. mit Link
+  - type: textarea
+    id: photos
+    attributes:
+      label: Photos (drag & drop) · Fotos
+  - type: checkboxes
+    id: consent
+    attributes:
+      label: Confirmation
+      options:
+        - label: "This report may be shown publicly. / Dieser Bericht darf öffentlich sichtbar sein."
+          required: true
+        - label: "I use Osmonauts privately and non-commercially (CC BY-NC-SA 4.0). / Ich nutze Osmonauts privat und nicht kommerziell."
+          required: true

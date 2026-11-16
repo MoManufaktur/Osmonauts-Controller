@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Osmonauts – OpenOsmosis Controller · Spülvorgänge in 3D</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; font-family: Helvetica, Arial, sans-serif; color: #1f2933;
+    background: radial-gradient(ellipse at 50% 25%, #35597d 0%, #172a40 55%, #0d1826 100%); }
+  #c { position: fixed; inset: 0; width: 100%; height: 100%; touch-action: none; cursor: grab; }
+  #c:active { cursor: grabbing; }
+  .panel { position: fixed; background: rgba(255,255,255,0.93); border-radius: 12px; box-shadow: 0 6px 22px rgba(0,0,0,.28); padding: 12px 14px; box-sizing: border-box; }
+  #top { left: 16px; top: 16px; width: 330px; }
+  h1 { font-size: 18px; margin: 0; letter-spacing: .2px; }
+  .sub { font-size: 12px; color: #5f6b76; margin: 2px 0 10px; }
+  .progs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .progs button, .ctrl button { font: inherit; font-size: 13px; border: 1px solid #c9ced3; background: #fff; color: #1f2933; border-radius: 8px; padding: 7px 8px; cursor: pointer; text-align: left; }
+  .progs button:hover, .ctrl button:hover { border-color: #1D9E75; }
+  .progs button.on { background: #1D9E75; border-color: #1D9E75; color: #fff; }
+  .progs button.wide { grid-column: span 2; }
+  .ctrl { display: flex; gap: 6px; margin-top: 8px; align-items: center; font-size: 12px; color: #5f6b76; }
+  .ctrl button { text-align: center; padding: 6px 10px; }
+  .hint { font-size: 11px; color: #7b8691; margin-top: 8px; }
+  #step { right: 16px; top: 16px; width: 330px; }
+  #prog { font-size: 12px; color: #5f6b76; text-transform: uppercase; letter-spacing: .6px; }
+  #sname { font-size: 18px; font-weight: 700; margin: 2px 0; }
+  #sdesc { font-size: 13px; color: #3e4c59; min-height: 34px; }
+  #real { font-size: 12px; color: #5f6b76; margin-top: 6px; display: flex; justify-content: space-between; }
+  .bar { height: 6px; background: #e4e7eb; border-radius: 3px; overflow: hidden; margin-top: 4px; }
+  .bar div { height: 100%; width: 0; background: #1D9E75; }
+  ol { margin: 10px 0 0; padding-left: 20px; font-size: 12px; color: #7b8691; max-height: 210px; overflow: auto; }
+  ol li.cur { color: #1f2933; font-weight: 700; }
+  ol li.done { color: #9aa5b1; text-decoration: line-through; }
+  #relays { right: 16px; bottom: 16px; width: 330px; }
+  .rl { display: flex; align-items: center; gap: 8px; font-size: 13px; margin: 3px 0; }
+  .dot { width: 12px; height: 12px; border-radius: 50%; background: #c9ced3; box-shadow: inset 0 0 0 1px rgba(0,0,0,.15); flex: none; }
+  .dot.on { background: #E24B4A; box-shadow: 0 0 8px #E24B4A; }
+  .rl b { width: 26px; }
+  .rl span.st { margin-left: auto; font-size: 11px; color: #7b8691; }
+  #legend { left: 16px; bottom: 16px; font-size: 12px; }
+  .lg { display: flex; align-items: center; gap: 8px; margin: 3px 0; }
+  .sw { width: 22px; height: 6px; border-radius: 3px; }
+  .credit { font-size: 11px; color: #7b8691; margin-top: 6px; }
+  #alarm { position: fixed; inset: 0; pointer-events: none; box-shadow: inset 0 0 0 0 rgba(226,75,74,0); transition: box-shadow .2s; }
+  body.ui0 .panel { display: none; }
+  @media (max-width: 900px) {
+    #top, #step, #relays { width: calc(50% - 24px); }
+    #legend { display: none; }
+    ol { display: none; }
+  }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="alarm"></div>
+
+<div class="panel" id="top">
+  <h1>Osmonauts – Spülvorgänge in 3D</h1>
+  <div class="sub">OpenOsmosis Controller · Firmware v6 · Werte aus config_elias.h</div>
+  <div class="progs" id="progs"></div>
+  <div class="ctrl">
+    <button id="pp" title="Pause / Weiter">❚❚</button>
+    <button id="rs" title="Ablauf neu starten">⟲</button>
+    <span>Tempo</span>
+    <button id="sp">1×</button>
+  </div>
+  <div class="hint">Ziehen = drehen · Mausrad / zwei Finger = zoomen · Rechte Maustaste = verschieben</div>
+</div>
+
+<div class="panel" id="step">
+  <div id="prog">–</div>
+  <div id="sname">–</div>
+  <div id="sdesc"></div>
+  <div id="real"><span id="rdur"></span><span id="rleft"></span></div>
+  <div class="bar"><div id="pbar"></div></div>
+  <ol id="slist"></ol>
+</div>
+
+<div class="panel" id="relays">
+  <div class="rl"><div class="dot" id="r1"></div><b>R1</b>V1 Wasserzulauf<span class="st" id="s1">zu</span></div>
+  <div class="rl"><div class="dot" id="r2"></div><b>R2</b>V2 Filtern / Zapfen<span class="st" id="s2">zu</span></div>
+  <div class="rl"><div class="dot" id="r3"></div><b>R3</b>V3 Standwasser → Abfluss<span class="st" id="s3">zu</span></div>
+  <div class="rl"><div class="dot" id="r4"></div><b>R4</b>V4 Membranspülung → Abfluss<span class="st" id="s4">zu</span></div>
+</div>
+
+<div class="panel" id="legend">
+  <div class="lg"><div class="sw" style="background:#3B8BD4"></div>Leitungswasser / Feed</div>
+  <div class="lg"><div class="sw" style="background:#1D9E75"></div>Permeat (Reinwasser)</div>
+  <div class="lg"><div class="sw" style="background:#9a968c"></div>Konzentrat / Abwasser</div>
+  <div class="lg"><div class="sw" style="background:#8E5BD6"></div>Wasserstoffperoxid (H₂O₂)</div>
+  <div class="credit">Kai Mommsen &amp; Elias Dörre · Hydraulik aus der Relaislogik abgeleitet</div>
+</div>
+
+<script>/*THREEJS*/</script>
+<script>
+(function () {
+'use strict';
+const T = THREE;
+const params = new URLSearchParams(location.search);
+
+// ------------------------------------------------------------------ renderer / scene
+const canvas = document.getElementById('c');
+const renderer = new T.WebGLRenderer({ canvas, antialias: true, alpha: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+renderer.shadowMap.enabled = !params.has('lite');
+renderer.shadowMap.type = T.PCFSoftShadowMap;
+renderer.outputColorSpace = T.SRGBColorSpace;
+const scene = new T.Scene();
+const camera = new T.PerspectiveCamera(38, 1, 0.1, 200);
+
+scene.add(new T.HemisphereLight(0xe8f2ff, 0x3a3a3a, 1.1));
+const sun = new T.DirectionalLight(0xffffff, 1.6);
+sun.position.set(9, 16, 11);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+Object.assign(sun.shadow.camera, { left: -15, right: 15, top: 10, bottom: -10, near: 1, far: 50 });
+scene.add(sun);
+const alarmLight = new T.PointLight(0xff2a2a, 0, 14);
+alarmLight.position.set(4, 2, 2);
+scene.add(alarmLight);
+
+// ------------------------------------------------------------------ camera orbit (own, no addon needed)
+const orbit = { target: new T.Vector3(-0.4, -0.6, 0.4), r: 23.5, theta: 0.16, phi: 0.98 };
+function updateCamera() {
+  const s = Math.sin(orbit.phi);
+  camera.position.set(orbit.target.x + orbit.r * s * Math.sin(orbit.theta),
+                      orbit.target.y + orbit.r * Math.cos(orbit.phi),
+                      orbit.target.z + orbit.r * s * Math.cos(orbit.theta));
+  camera.lookAt(orbit.target);
+}
+const pointers = new Map();
+let pinchDist = 0, panMode = false, userMoved = false;
+canvas.addEventListener('contextmenu', e => e.preventDefault());
+canvas.addEventListener('pointerdown', e => {
+  canvas.setPointerCapture(e.pointerId);
+  pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  panMode = e.button === 2 || e.shiftKey;
+  if (pointers.size === 2) { const [a, b] = [...pointers.values()]; pinchDist = Math.hypot(a.x - b.x, a.y - b.y); }
+});
+canvas.addEventListener('pointermove', e => {
+  const p = pointers.get(e.pointerId); if (!p) return;
+  const dx = e.clientX - p.x, dy = e.clientY - p.y;
+  p.x = e.clientX; p.y = e.clientY; userMoved = true;
+  if (pointers.size === 2) {
+    const [a, b] = [...pointers.values()]; const d = Math.hypot(a.x - b.x, a.y - b.y);
+    if (pinchDist) orbit.r = Math.min(40, Math.max(7, orbit.r * pinchDist / d)); pinchDist = d; return;
+  }
+  if (panMode) {
+    const right = new T.Vector3().setFromMatrixColumn(camera.matrix, 0);
+    const up = new T.Vector3().setFromMatrixColumn(camera.matrix, 1);
+    orbit.target.addScaledVector(right, -dx * orbit.r * 0.0012).addScaledVector(up, dy * orbit.r * 0.0012);
+  } else {
+    orbit.theta -= dx * 0.006;
+    orbit.phi = Math.min(1.5, Math.max(0.25, orbit.phi - dy * 0.006));
+  }
+});
+const endPointer = e => { pointers.delete(e.pointerId); pinchDist = 0; };
+canvas.addEventListener('pointerup', endPointer);
+canvas.addEventListener('pointercancel', endPointer);
+canvas.addEventListener('wheel', e => { e.preventDefault(); userMoved = true; orbit.r = Math.min(40, Math.max(7, orbit.r * (1 + Math.sign(e.deltaY) * 0.08))); }, { passive: false });
+
+// ------------------------------------------------------------------ materials & helpers
+const M = {
+  board: new T.MeshStandardMaterial({ color: 0xece8de, roughness: 0.9 }),
+  boardEdge: new T.MeshStandardMaterial({ color: 0xd3cfc4, roughness: 0.9 }),
+  glass: new T.MeshPhysicalMaterial({ color: 0xd8ecff, transparent: true, opacity: 0.22, roughness: 0.05, metalness: 0, depthWrite: false, side: T.DoubleSide }),
+  housing: new T.MeshPhysicalMaterial({ color: 0x9cc7ee, transparent: true, opacity: 0.30, roughness: 0.1, depthWrite: false, side: T.DoubleSide }),
+  white: new T.MeshStandardMaterial({ color: 0xf4f4f2, roughness: 0.5 }),
+  cap: new T.MeshStandardMaterial({ color: 0x2f6fb0, roughness: 0.5 }),
+  brass: new T.MeshStandardMaterial({ color: 0xb8925a, metalness: 0.65, roughness: 0.35 }),
+  chrome: new T.MeshStandardMaterial({ color: 0xe6eaee, metalness: 0.35, roughness: 0.25 }),
+  dark: new T.MeshStandardMaterial({ color: 0x2b2f33, roughness: 0.6 }),
+  sediment: new T.MeshStandardMaterial({ color: 0xe9dcc0, roughness: 0.95 }),
+  carbon: new T.MeshStandardMaterial({ color: 0x222222, roughness: 0.95 }),
+  restrictor: new T.MeshStandardMaterial({ color: 0x5f5e5a, roughness: 0.5 }),
+};
+const UP = new T.Vector3(0, 1, 0);
+const v3 = a => new T.Vector3(a[0], a[1], a[2]);
+
+function cylBetween(a, b, r, mat, open = true, seg = 18) {
+  const A = v3(a), B = v3(b), dir = B.clone().sub(A), len = dir.length();
+  const m = new T.Mesh(new T.CylinderGeometry(r, r, len, seg, 1, open), mat);
+  m.position.copy(A).add(B).multiplyScalar(0.5);
+  m.quaternion.setFromUnitVectors(UP, dir.normalize());
+  scene.add(m); return m;
+}
+const drawnSeg = new Set();
+function pipeAlong(pts, r = 0.13) {
+  for (let i = 0; i < pts.length - 1; i++) {
+    const key = [pts[i], pts[i + 1]].map(p => p.join(',')).sort().join('|');
+    if (drawnSeg.has(key)) continue; drawnSeg.add(key);
+    cylBetween(pts[i], pts[i + 1], r, M.glass);
+  }
+  pts.slice(1, -1).forEach(p => { const s = new T.Mesh(new T.SphereGeometry(r * 1.02, 14, 10), M.glass); s.position.copy(v3(p)); scene.add(s); });
+}
+function label(text, pos, opts = {}) {
+  const c = document.createElement('canvas'); const ctx = c.getContext('2d');
+  const fs = 44, pad = 18;
+  ctx.font = `700 ${fs}px Helvetica, Arial, sans-serif`;
+  const sub = opts.sub || '';
+  const w1 = ctx.measureText(text).width;
+  ctx.font = `400 ${fs * 0.72}px Helvetica, Arial, sans-serif`;
+  const w2 = sub ? ctx.measureText(sub).width : 0;
+  c.width = Math.ceil(Math.max(w1, w2) + pad * 2); c.height = sub ? fs * 2.2 + pad : fs + pad * 1.4;
+  ctx.fillStyle = opts.bg || 'rgba(255,255,255,0.9)';
+  const rr = 16; ctx.beginPath(); ctx.roundRect(0, 0, c.width, c.height, rr); ctx.fill();
+  ctx.fillStyle = opts.color || '#1f2933'; ctx.textBaseline = 'top';
+  ctx.font = `700 ${fs}px Helvetica, Arial, sans-serif`; ctx.fillText(text, pad, pad * 0.7);
+  if (sub) { ctx.fillStyle = '#5f6b76'; ctx.font = `400 ${fs * 0.72}px Helvetica, Arial, sans-serif`; ctx.fillText(sub, pad, pad * 0.7 + fs * 1.15); }
+  const tex = new T.CanvasTexture(c); tex.colorSpace = T.SRGBColorSpace; tex.anisotropy = 4;
+  const sp = new T.Sprite(new T.SpriteMaterial({ map: tex, depthTest: false, transparent: true }));
+  const h = opts.h || 0.5; sp.scale.set(h * c.width / c.height, h, 1);
+  sp.position.copy(v3(pos)); sp.renderOrder = 10; scene.add(sp); return sp;
+}
+
+// ------------------------------------------------------------------ base board
+const board = new T.Mesh(new T.BoxGeometry(23, 0.35, 10.5), M.board);
+board.position.set(-0.5, -2.2, 0); board.receiveShadow = true; scene.add(board);
+
+// ------------------------------------------------------------------ hydraulic paths
+const Y = 0.5, YD = -1.2, YT = 2.8;
+const P = {
+  feedA: [[-10.8, Y, 0], [-7.3, Y, 0], [-7.3, -1.25, 0], [-6.7, -1.25, 0], [-6.7, Y, 0], [-5.3, Y, 0], [-5.3, -1.25, 0], [-4.7, -1.25, 0], [-4.7, Y, 0], [-3.45, Y, 0]],
+  feedB: [[-2.55, Y, 0], [-1.5, Y, 0], [-0.25, Y, 0]],
+  memF:  [[-0.25, Y, 0], [4.7, Y, 0]],
+  conc:  [[4.7, Y, 0], [4.7, YD, 0], [6.5, YD, 0]],
+  restr: [[6.5, YD, 0], [6.5, YD, -1.2], [7.4, YD, -1.2], [7.4, YD, -2.6], [7.4, -1.75, -2.6]],
+  v4p:   [[6.5, YD, 0], [8.5, YD, 0], [8.5, YD, -2.6], [7.75, YD, -2.6], [7.75, -1.75, -2.6]],
+  perm:  [[5.15, Y, 0], [6.0, Y, 0], [6.0, YT, 0]],
+  v2p:   [[6.0, YT, 0], [6.0, YT, 2.6], [2.0, YT, 2.6], [2.0, 2.0, 2.6]],
+  stream:[[2.0, 2.0, 2.6], [2.0, -1.55, 2.6]],
+  v3p:   [[6.0, YT, 0], [6.0, YT, -2.6], [7.58, YT, -2.6], [7.58, -1.6, -2.6]],
+  inj:   [[-1.5, 2.35, 0], [-1.5, Y, 0]],
+};
+['feedA', 'feedB', 'conc', 'restr', 'v4p', 'perm', 'v2p', 'v3p'].forEach(k => pipeAlong(P[k]));
+pipeAlong([[-1.5, Y, 0], [-1.5, 1.75, 0]], 0.11);
+
+// ------------------------------------------------------------------ components
+function filterUnit(x, cartMat, name, sub) {
+  const hous = new T.Mesh(new T.CylinderGeometry(0.55, 0.55, 2.6, 32, 1, false), M.housing);
+  hous.position.set(x, -0.7, 0); scene.add(hous);
+  const cart = new T.Mesh(new T.CylinderGeometry(0.34, 0.34, 2.2, 24), cartMat);
+  cart.position.set(x, -0.75, 0); cart.castShadow = true; scene.add(cart);
+  const head = new T.Mesh(new T.CylinderGeometry(0.66, 0.62, 0.35, 32), M.cap);
+  head.position.set(x, 0.75, 0); head.castShadow = true; scene.add(head);
+  label(name, [x, 1.65, 0], { sub });
+}
+filterUnit(-7.0, M.sediment, 'Sedimentfilter', 'Vorfilter 1');
+filterUnit(-5.0, M.carbon, 'Aktivkohle', 'Vorfilter 2');
+label('Leitungswasser', [-10.2, 1.25, 0], { sub: 'Zulauf' });
+
+const valves = [];
+function valve(pos, axis, name, sub, idx) {
+  const g = new T.Group(); g.position.copy(v3(pos));
+  const body = new T.Mesh(new T.BoxGeometry(0.9, 0.55, 0.55), M.brass); body.castShadow = true; g.add(body);
+  const coilMat = new T.MeshStandardMaterial({ color: 0x3a3f45, roughness: 0.5, emissive: 0x000000 });
+  const coil = new T.Mesh(new T.CylinderGeometry(0.3, 0.3, 0.6, 24), coilMat); coil.position.y = 0.55; coil.castShadow = true; g.add(coil);
+  const led = new T.Mesh(new T.SphereGeometry(0.07, 12, 8), new T.MeshStandardMaterial({ color: 0x555555, emissive: 0x000000 }));
+  led.position.set(0, 0.9, 0); g.add(led);
+  if (axis === 'z') g.rotation.y = Math.PI / 2;
+  scene.add(g);
+  label(name, [pos[0], pos[1] + 1.45, pos[2]], { sub });
+  valves[idx] = { coilMat, led, on: 0 };
+}
+valve([-3.0, Y, 0], 'x', 'V1 Zulauf', 'Relais 1', 0);
+valve([4.0, YT, 2.6], 'x', 'V2 Zapfen', 'Relais 2', 1);
+valve([6.0, YT, -1.3], 'z', 'V3 Standwasser', 'Relais 3', 2);
+valve([8.5, YD, -1.1], 'z', 'V4 Spülung', 'Relais 4', 3);
+
+// injection port + syringe
+const port = new T.Mesh(new T.CylinderGeometry(0.16, 0.16, 0.3, 16), M.cap); port.position.set(-1.5, 1.85, 0); scene.add(port);
+label('Injektionsport', [-1.5, 3.65, 0], { sub: 'Rückschlagventil' });
+const syringe = new T.Group();
+const barrel = new T.Mesh(new T.CylinderGeometry(0.2, 0.2, 1.3, 20, 1, true), M.glass); barrel.position.y = 0.65; syringe.add(barrel);
+const fluidMat = new T.MeshStandardMaterial({ color: 0x8E5BD6, transparent: true, opacity: 0.85 });
+const fluid = new T.Mesh(new T.CylinderGeometry(0.17, 0.17, 1, 20), fluidMat); syringe.add(fluid);
+const plunger = new T.Mesh(new T.CylinderGeometry(0.05, 0.05, 1.0, 10), M.white); syringe.add(plunger);
+const thumb = new T.Mesh(new T.CylinderGeometry(0.26, 0.26, 0.06, 20), M.white); syringe.add(thumb);
+const needle = new T.Mesh(new T.CylinderGeometry(0.03, 0.03, 0.35, 8), M.chrome); needle.position.y = -0.17; syringe.add(needle);
+syringe.position.set(-1.5, 2.05, 0); scene.add(syringe);
+function setSyringe(fill, visible) {
+  syringe.visible = visible;
+  const h = Math.max(0.02, 1.2 * fill);
+  fluid.scale.y = h; fluid.position.y = 0.05 + h / 2;
+  plunger.position.y = 0.05 + h + 0.5; thumb.position.y = 0.05 + h + 1.0;
+}
+
+// membrane
+const memHousing = new T.Mesh(new T.CylinderGeometry(0.62, 0.62, 5.6, 40, 1, false), M.housing);
+memHousing.rotation.z = Math.PI / 2; memHousing.position.set(2.45, Y, 0); scene.add(memHousing);
+const coreMat = new T.MeshStandardMaterial({ color: 0xf2f0e6, roughness: 0.8 });
+const core = new T.Mesh(new T.CylinderGeometry(0.42, 0.42, 4.9, 32), coreMat);
+core.rotation.z = Math.PI / 2; core.position.set(2.45, Y, 0); core.castShadow = true; scene.add(core);
+for (const x of [-0.35, 5.25]) {
+  const c = new T.Mesh(new T.CylinderGeometry(0.68, 0.68, 0.22, 40), M.cap); c.rotation.z = Math.PI / 2; c.position.set(x, Y, 0); scene.add(c);
+}
+const legs = [-0.1, 5.0].map(x => { const l = new T.Mesh(new T.BoxGeometry(0.2, 2.1, 0.8), M.boardEdge); l.position.set(x, -0.85, 0); scene.add(l); return l; });
+label('RO-Membran', [2.45, 1.75, 0], { sub: 'Feed → Permeat + Konzentrat' });
+
+// restrictor
+const rest = new T.Mesh(new T.CylinderGeometry(0.2, 0.2, 0.7, 16), M.restrictor); rest.rotation.z = Math.PI / 2; rest.position.set(6.95, YD, -1.2); scene.add(rest);
+label('Durchflussbegrenzer', [6.95, -0.35, -1.2], { sub: 'Konzentrat', h: 0.36 });
+
+// drain
+const drain = new T.Mesh(new T.CylinderGeometry(0.75, 0.35, 0.55, 32, 1, true), new T.MeshStandardMaterial({ color: 0x9aa1a8, metalness: 0.5, roughness: 0.4, side: T.DoubleSide }));
+drain.position.set(7.58, -1.75, -2.6); scene.add(drain);
+label('Abfluss', [9.1, -1.05, -2.6]);
+
+// faucet + glass
+const fh = new T.Mesh(new T.CylinderGeometry(0.16, 0.16, 0.9, 16), M.chrome); fh.position.set(2.0, 2.45, 2.6); scene.add(fh);
+const glass = new T.Mesh(new T.CylinderGeometry(0.55, 0.48, 1.6, 32, 1, true), M.glass); glass.position.set(2.0, -1.2, 2.6); scene.add(glass);
+const glassBottom = new T.Mesh(new T.CircleGeometry(0.48, 32), M.glass); glassBottom.rotation.x = -Math.PI / 2; glassBottom.position.set(2.0, -1.99, 2.6); scene.add(glassBottom);
+const glassWaterMat = new T.MeshStandardMaterial({ color: 0x4fb3e8, transparent: true, opacity: 0.75 });
+const glassWater = new T.Mesh(new T.CylinderGeometry(0.47, 0.45, 1, 32), glassWaterMat); glassWater.position.set(2.0, -1.98, 2.6); scene.add(glassWater);
+label('Zapfhahn', [2.0, 3.6, 2.6], { sub: 'Reinwasser' });
+
+// aqua stop sensor + puddle
+const sensor = new T.Mesh(new T.BoxGeometry(0.9, 0.06, 0.6), new T.MeshStandardMaterial({ color: 0x1e6b46, roughness: 0.6 }));
+sensor.position.set(4.0, -1.99, 1.4); scene.add(sensor);
+for (let i = 0; i < 5; i++) { const t = new T.Mesh(new T.BoxGeometry(0.8, 0.065, 0.03), M.chrome); t.position.set(4.0, -1.985, 1.18 + i * 0.11); scene.add(t); }
+const puddle = new T.Mesh(new T.CircleGeometry(1, 40), new T.MeshStandardMaterial({ color: 0x5aa9e6, transparent: true, opacity: 0.55 }));
+puddle.rotation.x = -Math.PI / 2; puddle.position.set(4.0, -1.955, 1.4); puddle.scale.setScalar(0.001); scene.add(puddle);
+label('Aquastop-Sensor', [4.0, -1.25, 1.4], { h: 0.34 });
+
+// controller box with display
+const ctl = new T.Group(); ctl.position.set(-7.3, -1.05, 3.3); scene.add(ctl);
+const ctlBox = new T.Mesh(new T.BoxGeometry(3.4, 1.9, 0.7), M.dark); ctlBox.castShadow = true; ctl.add(ctlBox);
+const scr = document.createElement('canvas'); scr.width = 512; scr.height = 128;
+const sctx = scr.getContext('2d');
+const scrTex = new T.CanvasTexture(scr); scrTex.colorSpace = T.SRGBColorSpace;
+const screen = new T.Mesh(new T.PlaneGeometry(2.4, 0.6), new T.MeshBasicMaterial({ map: scrTex }));
+screen.position.set(0, 0.35, 0.36); ctl.add(screen);
+const ctlLeds = [];
+for (let i = 0; i < 4; i++) {
+  const l = new T.Mesh(new T.SphereGeometry(0.08, 12, 8), new T.MeshStandardMaterial({ color: 0x444444, emissive: 0x000000 }));
+  l.position.set(-1.05 + i * 0.35, -0.3, 0.36); ctl.add(l); ctlLeds.push(l);
+}
+for (let i = 0; i < 4; i++) {
+  const b = new T.Mesh(new T.CylinderGeometry(0.13, 0.13, 0.12, 16), new T.MeshStandardMaterial({ color: [0x1D9E75, 0xE24B4A, 0x7F77DD, 0xBA7517][i] }));
+  b.rotation.x = Math.PI / 2; b.position.set(0.35 + i * 0.33, -0.55, 0.38); ctl.add(b);
+}
+label('Osmonauts Controller', [-7.3, 0.55, 3.3], { sub: 'Arduino + 4 Relais' });
+function drawScreen(line1, line2) {
+  sctx.fillStyle = '#05070a'; sctx.fillRect(0, 0, 512, 128);
+  sctx.fillStyle = '#8fd3ff'; sctx.font = '700 40px Courier New, monospace'; sctx.fillText(line1, 16, 50);
+  sctx.font = '400 30px Courier New, monospace'; sctx.fillStyle = '#6fa8c9'; sctx.fillText(line2 || '', 16, 100);
+  scrTex.needsUpdate = true;
+}
+
+// ------------------------------------------------------------------ flowing particles
+const COLORS = { feed: new T.Color(0x3B8BD4), perm: new T.Color(0x1D9E75), conc: new T.Color(0x9a968c), h2o2: new T.Color(0x8E5BD6) };
+const sphereGeo = new T.SphereGeometry(1, 10, 8);
+class Flow {
+  constructor(pts, kind, density = 7, size = 0.075, spread = 0) {
+    this.pts = pts.map(v3); this.kind = kind; this.size = size; this.spread = spread;
+    this.cum = [0]; for (let i = 1; i < this.pts.length; i++) this.cum.push(this.cum[i - 1] + this.pts[i].distanceTo(this.pts[i - 1]));
+    this.len = this.cum[this.cum.length - 1];
+    this.n = Math.max(10, Math.round(this.len * density));
+    this.mat = new T.MeshStandardMaterial({ color: COLORS[kind].clone(), emissive: COLORS[kind].clone(), emissiveIntensity: 0.25, roughness: 0.3 });
+    this.mesh = new T.InstancedMesh(sphereGeo, this.mat, this.n); this.mesh.frustumCulled = false; scene.add(this.mesh);
+    this.off = []; for (let i = 0; i < this.n; i++) this.off.push([(Math.random() - .5) * 2, (Math.random() - .5) * 2, Math.random() * 0.03]);
+    this.phase = Math.random(); this.rate = 0; this.level = 0; this.front = 0; this.mix = 0; this.target = 0;
+    this.tmp = new T.Matrix4(); this.p = new T.Vector3(); this.q = new T.Quaternion(); this.s = new T.Vector3();
+  }
+  at(u, out) {
+    const d = u * this.len; let i = 1; while (i < this.cum.length - 1 && this.cum[i] < d) i++;
+    const t = (d - this.cum[i - 1]) / (this.cum[i] - this.cum[i - 1] || 1);
+    return out.copy(this.pts[i - 1]).lerp(this.pts[i], t);
+  }
+  set(rate, mix) {
+    if (rate > 0 && this.target === 0) this.front = 0;   // water front enters the empty pipe
+    this.target = rate > 0 ? 1 : 0; if (rate > 0) this.rate = rate; this.mixT = this.noMix ? 0 : mix;
+  }
+  update(dt) {
+    this.level += (this.target - this.level) * Math.min(1, dt * (this.target ? 6 : 2.5));
+    const speed = 2.6 * this.rate;
+    if (this.level > 0.01) this.phase = (this.phase + dt * speed / this.len) % 1;
+    if (this.target) this.front = Math.min(1, this.front + dt * speed / this.len);
+    this.mix += ((this.mixT || 0) - this.mix) * Math.min(1, dt * 2);
+    const base = COLORS[this.kind];
+    this.mat.color.copy(base).lerp(COLORS.h2o2, this.mix); this.mat.emissive.copy(this.mat.color);
+    for (let i = 0; i < this.n; i++) {
+      const u = (i / this.n + this.phase) % 1;
+      let vis = this.level; if (this.target && u > this.front) vis = 0;
+      this.at(u, this.p);
+      if (this.spread) { const a = this.off[i][0] * Math.PI; const rr = this.spread * (0.9 + 0.2 * this.off[i][1]); this.p.y += Math.cos(a) * rr; this.p.z += Math.sin(a) * rr; }
+      this.s.setScalar(this.size * vis + 1e-4);
+      this.tmp.compose(this.p, this.q, this.s); this.mesh.setMatrixAt(i, this.tmp);
+    }
+    this.mesh.instanceMatrix.needsUpdate = true;
+  }
+}
+const F = {
+  feedA: Object.assign(new Flow(P.feedA, 'feed'), { noMix: true }), feedB: new Flow(P.feedB, 'feed'),
+  memF: new Flow(P.memF, 'feed', 14, 0.08, 0.53), conc: new Flow(P.conc, 'conc'),
+  restr: new Flow(P.restr, 'conc', 6, 0.06), v4p: new Flow(P.v4p, 'conc', 8, 0.08),
+  perm: new Flow(P.perm, 'perm'), v2p: new Flow(P.v2p, 'perm'), stream: new Flow(P.stream, 'perm', 10, 0.06),
+  v3p: new Flow(P.v3p, 'perm'), inj: new Flow(P.inj, 'h2o2', 9, 0.07),
+};
+
+// ------------------------------------------------------------------ procedures (durations from config_elias.h)
+const FLOWS = {
+  none: {},
+  memFlush: { feedA: 1.6, feedB: 1.6, memF: 1.6, conc: 1.6, v4p: 1.6 },
+  stand:    { feedA: 1, feedB: 1, memF: 0.7, conc: 0.45, restr: 0.45, perm: 0.8, v3p: 0.8 },
+  filter:   { feedA: 1, feedB: 1, memF: 0.7, conc: 0.45, restr: 0.45, perm: 0.8, v2p: 0.8, stream: 1.4 },
+  inject:   { inj: 0.35, memF: 0.25, conc: 0.3, v4p: 0.3 },
+};
+const R = { none: [0, 0, 0, 0], mem: [1, 0, 0, 1], stand: [1, 0, 1, 0], filter: [1, 1, 0, 0], inject: [0, 0, 0, 1] };
+const S = (name, real, anim, relays, flows, extra = {}) => Object.assign({ name, real, anim, relays, flows }, extra);
+
+const preMem  = S('Vorspülung Membran', 10, 5, R.mem, 'memFlush', { screen: 'Membrane Flush', desc: 'V1 + V4 offen: Wasser strömt schnell über die Membran und spült Ablagerungen direkt in den Abfluss.' });
+const preStand= S('Vorspülung Standwasser', 90, 6.5, R.stand, 'stand', { screen: 'Stand Water Flush', desc: 'V1 + V3 offen: Das abgestandene Permeat in den Leitungen wird verworfen.' });
+const tap     = S('Filtern / Zapfen', 215, 9, R.filter, 'filter', { screen: 'Tapping Water', desc: 'V1 + V2 offen: Frisches Reinwasser fließt zum Zapfhahn, das Konzentrat über den Durchflussbegrenzer ab.', glass: 1 });
+const wait3   = S('Warten vor der Nachspülung', 180, 3, R.none, 'none', { screen: 'Next Automatic Flush', desc: 'Alle Ventile zu. In dieser Zeit kannst du weitere Flaschen füllen, ohne dass dazwischen gespült wird.' });
+const postMem = S('Nachspülung Membran', 15, 5, R.mem, 'memFlush', { screen: '2nd Membrane Flush', desc: 'V1 + V4 offen: Die Membran wird nach dem Zapfen sauber gespült.' });
+const done    = S('Fertig – Leerlauf', 0, 2.5, R.none, 'none', { screen: 'Next Automatic Flush', desc: 'Alle Ventile geschlossen. Die Auto-Spülung startet nach 6 h ohne Nutzung.' });
+
+const PROGRAMS = {
+  tap: { title: 'Wasser zapfen', btn: 'Wasser zapfen', trigger: 'Taster 1 kurz', steps: [preMem, preStand, tap, wait3, postMem, done], resetGlass: true },
+  auto: { title: 'Automatische Spülung', btn: 'Auto-Spülung (6 h)', trigger: 'alle 6 h ohne Nutzung', steps: [
+    S('6 Stunden ohne Nutzung', 21600, 2.5, R.none, 'none', { screen: 'Next Automatic Flush', desc: 'Läuft der Countdown ab, spült der Controller selbstständig – gegen Keime im stehenden Wasser.' }),
+    preMem, preStand, postMem, done] },
+  filter: { title: 'Filterwechsel', btn: 'Filterwechsel', trigger: 'Taster 4 lang', steps: [
+    S('Membranspülung neue Filter', 900, 7, R.mem, 'memFlush', { screen: 'Exchange Filter', desc: 'Nach dem Einsetzen neuer Kartuschen: 15 min Membranspülung spült Kohlestaub und Konservierer aus.' }),
+    S('Standwasserspülung neue Filter', 900, 7, R.stand, 'stand', { screen: 'Exchange Filter', desc: '15 min Permeat in den Abfluss, bis das Reinwasser klar ist.' }), done] },
+  disinfect: { title: 'Desinfektion', btn: 'Desinfektion', trigger: 'Taster 3 lang', resetGlass: true, steps: (() => {
+    const st = [
+      S('1. H₂O₂ einspritzen', 120, 7, R.inject, 'inject', { screen: 'Desinfection', desc: '20 ml H₂O₂ (3 %) mit der Einwegspritze einspritzen. Zulauf zu, V4 offen: der Druck kann entweichen.', syringe: [1, 0], h2o2: 0.6, mix: 1 }),
+      S('H₂O₂ ins System bewegen', 8, 4, R.stand, 'stand', { screen: 'Desinfection', desc: 'V1 + V3 für 8 s: das Peroxid wird weiter in Membran und Leitungen geschoben.', h2o2: 0.8, mix: 0.75 }),
+      S('2. H₂O₂ einspritzen', 120, 7, R.inject, 'inject', { screen: 'Desinfection', desc: 'Kurzer Piepton: weitere 20 ml H₂O₂ einspritzen.', syringe: [1, 0], h2o2: 1, mix: 1 }),
+    ];
+    for (let i = 1; i <= 7; i++) {
+      st.push(S(`Puls ${i} von 7`, 8, 2.4, R.filter, 'filter', { screen: 'Desinfection', desc: 'V1 + V2 für 8 s: das Peroxid wandert Stück für Stück durch das System. Behälter unter den Zapfhahn stellen!', h2o2: 1 - i * 0.05, mix: 0.7 - i * 0.05, glass: 0.6 }));
+      st.push(S(`Einwirkpause ${i}`, 600, 1.6, R.none, 'none', { screen: 'Desinfection', desc: '10 min Einwirkzeit, alle Ventile zu.', h2o2: 1 - i * 0.05 }));
+    }
+    st.push(S('Endspülung Membran', 300, 5, R.mem, 'memFlush', { screen: 'Desinfection', desc: '5 min Membranspülung in den Abfluss.', h2o2: 0.35, mix: 0.25 }));
+    st.push(S('Endspülung Standwasser', 300, 5, R.stand, 'stand', { screen: 'Desinfection', desc: '5 min Permeat in den Abfluss.', h2o2: 0.12, mix: 0.1 }));
+    st.push(S('Endspülung Filtern', 300, 5, R.filter, 'filter', { screen: 'Desinfection', desc: '5 min Filterbetrieb. Danach spült der nächste Zapfvorgang sicherheitshalber immer vor.', h2o2: 0, mix: 0, glass: 1 }));
+    st.push(Object.assign({}, done, { desc: 'Desinfektion abgeschlossen (≈ 90 min Echtzeit).' }));
+    return st; })() },
+  aquastop: { title: 'Aquastop', btn: 'Aquastop', trigger: 'Sensor 5× nass', resetGlass: true, steps: [
+    Object.assign({}, tap, { anim: 4, desc: 'Normaler Zapfvorgang läuft …' }),
+    S('Leck erkannt', 5, 3, R.filter, 'filter', { screen: 'Tapping Water', desc: 'Der Sensor meldet Wasser – nach 5 nassen Messungen in Folge (1 pro Sekunde) greift der Aquastop.', puddle: 1, glass: 1 }),
+    S('AQUASTOP – alles zu', 0, 6, R.none, 'none', { screen: 'AQUA STOP!', desc: 'Alle Ventile geschlossen, Alarmton. Der Controller bleibt bis zum Reset gesperrt – keine Taste, keine Auto-Spülung.', puddle: 1, alarm: true })] },
+};
+PROGRAMS.all = { title: 'Alle Abläufe', btn: 'Alle Abläufe nacheinander', trigger: 'Rundgang', all: ['tap', 'auto', 'filter', 'disinfect', 'aquastop'] };
+
+// ------------------------------------------------------------------ player
+const ui = id => document.getElementById(id);
+const progsEl = ui('progs');
+Object.entries(PROGRAMS).forEach(([k, p]) => {
+  const b = document.createElement('button'); b.textContent = p.btn; b.dataset.k = k; if (k === 'all') b.className = 'wide';
+  b.onclick = () => start(k); progsEl.appendChild(b);
+});
+let queue = [], prog = null, progKey = '', si = 0, st = 0, paused = false, speed = 1, glassLevel = 0, h2o2 = 0, puddleLevel = 0, chain = null;
+function start(key, step = 0, frac = 0, keepChain = false) {
+  const p = PROGRAMS[key];
+  if (p.all) { chain = { list: p.all.slice(), idx: 0 }; start(chain.list[0], step, frac, true); markAll(); return; }
+  if (!keepChain) chain = null;
+  prog = p; progKey = key; si = Math.min(step, p.steps.length - 1); st = p.steps[si].anim * frac;
+  if (p.resetGlass) glassLevel = 0;
+  if (key !== 'disinfect') h2o2 = 0;
+  puddleLevel = 0;
+  [...progsEl.children].forEach(b => b.classList.toggle('on', b.dataset.k === (chain ? 'all' : key)));
+  const ol = ui('slist'); ol.innerHTML = '';
+  p.steps.forEach(s => { const li = document.createElement('li'); li.textContent = s.name + (s.real ? ` (${fmt(s.real)})` : ''); ol.appendChild(li); });
+  ui('prog').textContent = (chain ? 'Rundgang · ' : '') + p.title + ' · ' + p.trigger;
+  enterStep();
+}
+function markAll() { [...progsEl.children].forEach(b => b.classList.toggle('on', b.dataset.k === 'all')); }
+function fmt(s) { if (s >= 3600) return (s / 3600) + ' h'; if (s >= 60) return (s % 60 ? (s / 60).toFixed(1) : s / 60) + ' min'; return s + ' s'; }
+function enterStep() {
+  const s = prog.steps[si];
+  ui('sname').textContent = s.name; ui('sdesc').textContent = s.desc || '';
+  ui('rdur').textContent = s.real ? 'Echtzeit: ' + fmt(s.real) : '';
+  [...ui('slist').children].forEach((li, i) => { li.className = i < si ? 'done' : i === si ? 'cur' : ''; });
+  const cur = ui('slist').children[si]; if (cur) cur.scrollIntoView({ block: 'nearest' });
+  const fl = FLOWS[s.flows];
+  Object.entries(F).forEach(([k, f]) => f.set(fl[k] || 0, s.mix || 0));
+  s.relays.forEach((on, i) => {
+    valves[i].on = on;
+    ui('r' + (i + 1)).classList.toggle('on', !!on); ui('s' + (i + 1)).textContent = on ? 'offen' : 'zu';
+    ctlLeds[i].material.emissive.setHex(on ? 0xff3030 : 0x000000); ctlLeds[i].material.color.setHex(on ? 0xff6060 : 0x444444);
+  });
+  drawScreen(s.screen || '', s.real ? fmt(s.real) : '');
+}
+function nextStep() {
+  si++;
+  if (si >= prog.steps.length) {
+    if (chain) { chain.idx = (chain.idx + 1) % chain.list.length; start(chain.list[chain.idx], 0, 0, true); markAll(); return; }
+    if (progKey === 'aquastop') { si = prog.steps.length - 1; st = 0; return; }   // stays locked
+    start(progKey); return;
+  }
+  st = 0; enterStep();
+}
+ui('pp').onclick = () => { paused = !paused; ui('pp').textContent = paused ? '▶' : '❚❚'; };
+ui('rs').onclick = () => start(chain ? 'all' : progKey);
+const SPEEDS = [0.5, 1, 2, 4]; let spIdx = 1;
+ui('sp').onclick = () => { spIdx = (spIdx + 1) % SPEEDS.length; speed = SPEEDS[spIdx]; ui('sp').textContent = speed + '×'; };
+
+// ------------------------------------------------------------------ animation loop
+function resize() {
+  const w = window.innerWidth, h = window.innerHeight;
+  renderer.setSize(w, h, false); camera.aspect = w / h;
+  camera.fov = w < h ? 58 : 38; camera.updateProjectionMatrix();
+}
+window.addEventListener('resize', resize); resize();
+
+let last = performance.now(), clock = 0;
+function frame(now) {
+  const rdt = Math.min(0.05, (now - last) / 1000); last = now;
+  const dt = paused ? 0 : rdt * speed; clock += rdt;
+  tick(dt, rdt);
+  requestAnimationFrame(frame);
+}
+function tick(dt, rdt) {
+  if (prog) {
+    const s = prog.steps[si];
+    st += dt;
+    const frac = Math.min(1, st / s.anim);
+    ui('pbar').style.width = (frac * 100) + '%';
+    ui('rleft').textContent = s.real ? 'noch ' + fmt(Math.max(0, Math.round(s.real * (1 - frac)))) : '';
+    if (s.glass) glassLevel = Math.min(s.glass, glassLevel + dt * 0.12);
+    if (s.h2o2 !== undefined) h2o2 += (s.h2o2 - h2o2) * Math.min(1, dt * 1.5);
+    puddleLevel += ((s.puddle || 0) - puddleLevel) * Math.min(1, dt * 1.2);
+    setSyringe(s.syringe ? 1 - frac : 0, !!s.syringe);
+    const alarmOn = s.alarm && Math.sin(clock * 8) > 0;
+    alarmLight.intensity = alarmOn ? 60 : 0;
+    ui('alarm').style.boxShadow = alarmOn ? 'inset 0 0 120px 30px rgba(226,75,74,.55)' : 'none';
+    if (st >= s.anim) nextStep();
+  }
+  Object.values(F).forEach(f => f.update(dt));
+  valves.forEach(v => {
+    v.coilMat.emissive.setHex(v.on ? 0xb3261e : 0x000000); v.coilMat.emissiveIntensity = v.on ? 0.9 : 0;
+    v.led.material.emissive.setHex(v.on ? 0xff3b30 : 0x000000); v.led.material.color.setHex(v.on ? 0xff6b60 : 0x555555);
+  });
+  coreMat.color.setHex(0xf2f0e6).lerp(COLORS.h2o2, h2o2 * 0.75);
+  glassWater.visible = glassLevel > 0.01; glassWater.scale.y = Math.max(0.001, glassLevel * 1.5); glassWater.position.y = -1.98 + glassWater.scale.y / 2;
+  glassWaterMat.color.setHex(0x4fb3e8).lerp(COLORS.h2o2, progKey === 'disinfect' ? 0.6 : 0);
+  puddle.scale.setScalar(Math.max(0.001, puddleLevel * 1.1)); puddle.visible = puddleLevel > 0.01;
+  if (!userMoved && !params.has('static')) orbit.theta = 0.16 + Math.sin(clock * 0.12) * 0.22;
+  updateCamera();
+  renderer.render(scene, camera);
+}
+
+// ------------------------------------------------------------------ external control (screenshots / video): ?program=disinfect&step=3&t=0.5&ui=0
+window.osmo = { start, tick: (dt) => tick(dt, dt), orbit, setSpeed: v => speed = v, pause: v => paused = v, programs: Object.keys(PROGRAMS) };
+if (params.get('ui') === '0') document.body.classList.add('ui0');
+if (params.has('theta')) orbit.theta = +params.get('theta');
+if (params.has('r')) orbit.r = +params.get('r');
+start(params.get('program') || 'all', +(params.get('step') || 0), +(params.get('t') || 0));
+// warm-up so flows are filled when starting mid-step
+if (params.has('step')) { for (let i = 0; i < 90; i++) { Object.values(F).forEach(f => f.update(1 / 30)); } }
+drawScreen(prog.steps[si].screen || '', '');
+requestAnimationFrame(t => { last = t; requestAnimationFrame(frame); });
+})();
+</script>
+</body>
+</html>

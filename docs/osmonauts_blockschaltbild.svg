@@ -1,0 +1,343 @@
+<svg xmlns='http://www.w3.org/2000/svg' width='1700' height='1400' viewBox='0 0 1700 1400'>
+<title>Osmonauts – OpenOsmosis Controller · Blockschaltbild</title>
+<defs>
+<marker id='ar' viewBox='0 0 10 10' refX='8' refY='5' markerWidth='7' markerHeight='7' orient='auto-start-reverse'><path d='M2 1L8 5L2 9' fill='none' stroke='context-stroke' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></marker>
+<marker id='arw' viewBox='0 0 10 10' refX='5' refY='5' markerWidth='9' markerHeight='9' orient='auto'><path d='M1 1L7 5L1 9Z' fill='#FFFFFF' stroke='none'/></marker>
+</defs>
+<rect width='1700' height='1400' fill='#FFFFFF'/>
+<text x='40' y='38' font-family='Helvetica, Arial, sans-serif' font-size='26' font-weight='700' fill='#2C2C2A' text-anchor='start' dominant-baseline='central'>Osmonauts – OpenOsmosis Controller · Blockschaltbild</text>
+<text x='40' y='66' font-family='Helvetica, Arial, sans-serif' font-size='14' font-weight='400' fill='#5F5E5A' text-anchor='start' dominant-baseline='central'>Steuerung für Umkehrosmoseanlagen (Arduino) · Firmware v6.0 · Kai Mommsen &amp; Elias Dörre · CC BY-NC-SA 4.0 · github.com/MoManufaktur/osmonauts-controller</text>
+<rect x='30' y='90' width='1000' height='600' rx='14' fill='none' stroke='#B4B2A9' stroke-width='1'/>
+<text x='50' y='114' font-family='Helvetica, Arial, sans-serif' font-size='18' font-weight='700' fill='#2C2C2A' text-anchor='start' dominant-baseline='central'>A · Elektrik und Signale</text>
+<text x='50' y='136' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='400' fill='#5F5E5A' text-anchor='start' dominant-baseline='central'>Pins: config.h (Uno/Nano) · config_elias.h (Nano) · config_kai.h (Mega)</text>
+<rect x='60' y='160' width='200' height='60' rx='8' fill='#FAEEDA' stroke='#854F0B' stroke-width='1.2'/>
+<text x='160.0' y='181.0' font-family='Helvetica, Arial, sans-serif' font-size='14' font-weight='700' fill='#633806' text-anchor='middle' dominant-baseline='central'>Netzteil Steuerung</text>
+<text x='160.0' y='199.0' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='400' fill='#854F0B' text-anchor='middle' dominant-baseline='central'>USB / 7–12 V DC</text>
+<rect x='60' y='560' width='200' height='60' rx='8' fill='#FAEEDA' stroke='#854F0B' stroke-width='1.2'/>
+<text x='160.0' y='581.0' font-family='Helvetica, Arial, sans-serif' font-size='14' font-weight='700' fill='#633806' text-anchor='middle' dominant-baseline='central'>Netzteil Ventile</text>
+<text x='160.0' y='599.0' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='400' fill='#854F0B' text-anchor='middle' dominant-baseline='central'>je nach Ventiltyp</text>
+<rect x='60' y='245' width='200' height='52' rx='8' fill='#E1F5EE' stroke='#0F6E56' stroke-width='1.2'/>
+<text x='160.0' y='262.0' font-family='Helvetica, Arial, sans-serif' font-size='14' font-weight='700' fill='#085041' text-anchor='middle' dominant-baseline='central'>Taster 1</text>
+<text x='160.0' y='280.0' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='400' fill='#0F6E56' text-anchor='middle' dominant-baseline='central'>kurz: zapfen · lang: Stopp</text>
+<text x='272' y='271' font-family='Helvetica, Arial, sans-serif' font-size='11' font-weight='400' fill='#0F6E56' text-anchor='start' dominant-baseline='central'>D2 · D3 · 23</text>
+<path d='M380 271 L418 271' fill='none' stroke='#5F5E5A' stroke-width='1.4' marker-end='url(#ar)'/>
+<rect x='60' y='307' width='200' height='52' rx='8' fill='#E1F5EE' stroke='#0F6E56' stroke-width='1.2'/>
+<text x='160.0' y='324.0' font-family='Helvetica, Arial, sans-serif' font-size='14' font-weight='700' fill='#085041' text-anchor='middle' dominant-baseline='central'>Taster 2 (optional)</text>
+<text x='160.0' y='342.0' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='400' fill='#0F6E56' text-anchor='middle' dominant-baseline='central'>kurz: Stopp</text>
+<text x='272' y='333' font-family='Helvetica, Arial, sans-serif' font-size='11' font-weight='400' fill='#0F6E56' text-anchor='start' dominant-baseline='central'>D3 · – · 25</text>
+<path d='M380 333 L418 333' fill='none' stroke='#5F5E5A' stroke-width='1.4' marker-end='url(#ar)'/>
+<rect x='60' y='369' width='200' height='52' rx='8' fill='#E1F5EE' stroke='#0F6E56' stroke-width='1.2'/>
+<text x='160.0' y='386.0' font-family='Helvetica, Arial, sans-serif' font-size='14' font-weight='700' fill='#085041' text-anchor='middle' dominant-baseline='central'>Taster 3</text>
+<text x='160.0' y='404.0' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='400' fill='#0F6E56' text-anchor='middle' dominant-baseline='central'>lang: Desinfektion</text>
+<text x='272' y='395' font-family='Helvetica, Arial, sans-serif' font-size='11' font-weight='400' fill='#0F6E56' text-anchor='start' dominant-baseline='central'>– · D11 · 27</text>
+<path d='M380 395 L418 395' fill='none' stroke='#5F5E5A' stroke-width='1.4' marker-end='url(#ar)'/>
+<rect x='60' y='431' width='200' height='52' rx='8' fill='#E1F5EE' stroke='#0F6E56' stroke-width='1.2'/>
+<text x='160.0' y='448.0' font-family='Helvetica, Arial, sans-serif' font-size='14' font-weight='700' fill='#085041' text-anchor='middle' dominant-baseline='central'>Taster 4</text>
+<text x='160.0' y='466.0' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='400' fill='#0F6E56' text-anchor='middle' dominant-baseline='central'>lang: Filterwechsel</text>
+<text x='272' y='457' font-family='Helvetica, Arial, sans-serif' font-size='11' font-weight='400' fill='#0F6E56' text-anchor='start' dominant-baseline='central'>– · D2 · 29</text>
+<path d='M380 457 L418 457' fill='none' stroke='#5F5E5A' stroke-width='1.4' marker-end='url(#ar)'/>
+<rect x='60' y='493' width='200' height='52' rx='8' fill='#FCEBEB' stroke='#A32D2D' stroke-width='1.2'/>
+<text x='160.0' y='510.0' font-family='Helvetica, Arial, sans-serif' font-size='14' font-weight='700' fill='#791F1F' text-anchor='middle' dominant-baseline='central'>Aquastop-Sensor</text>
+<text x='160.0' y='528.0' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='400' fill='#A32D2D' text-anchor='middle' dominant-baseline='central'>Regen- oder Pegelsensor</text>
+<text x='272' y='519' font-family='Helvetica, Arial, sans-serif' font-size='11' font-weight='400' fill='#A32D2D' text-anchor='start' dominant-baseline='central'>A0 · A7 · A0</text>
+<path d='M380 519 L418 519' fill='none' stroke='#5F5E5A' stroke-width='1.4' marker-end='url(#ar)'/>
+<rect x='420' y='160' width='200' height='460' rx='8' fill='#EEEDFE' stroke='#534AB7' stroke-width='1.2'/>
+<text x='520.0' y='372.0' font-family='Helvetica, Arial, sans-serif' font-size='14' font-weight='700' fill='#3C3489' text-anchor='middle' dominant-baseline='central'>Arduino</text>
+<text x='520.0' y='390.0' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='400' fill='#534AB7' text-anchor='middle' dominant-baseline='central'>Uno / Nano / Mega 2560</text>
+<text x='520.0' y='406.0' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='400' fill='#534AB7' text-anchor='middle' dominant-baseline='central'>Osmonauts Firmware</text>
+<path d='M260 190 L418 190' fill='none' stroke='#5F5E5A' stroke-width='1.4' marker-end='url(#ar)'/>
+<path d='M622 200 L668 200' fill='none' stroke='#5F5E5A' stroke-width='1.4' marker-end='url(#ar)'/>
+<rect x='670' y='170' width='230' height='62' rx='8' fill='#FAECE7' stroke='#993C1D' stroke-width='1.2'/>
+<text x='785.0' y='183.0' font-family='Helvetica, Arial, sans-serif' font-size='14' font-weight='700' fill='#712B13' text-anchor='middle' dominant-baseline='central'>Relais 1 → Ventil V1</text>
+<text x='785.0' y='201.0' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='400' fill='#993C1D' text-anchor='middle' dominant-baseline='central'>Wasserzulauf</text>
+<text x='785.0' y='217.0' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='400' fill='#993C1D' text-anchor='middle' dominant-baseline='central'>Pins D4 · D4 · 22</text>
+<path d='M622 270 L668 270' fill='none' stroke='#5F5E5A' stroke-width='1.4' marker-end='url(#ar)'/>
+<rect x='670' y='240' width='230' height='62' rx='8' fill='#FAECE7' stroke='#993C1D' stroke-width='1.2'/>
+<text x='785.0' y='253.0' font-family='Helvetica, Arial, sans-serif' font-size='14' font-weight='700' fill='#712B13' text-anchor='middle' dominant-baseline='central'>Relais 2 → Ventil V2</text>
+<text x='785.0' y='271.0' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='400' fill='#993C1D' text-anchor='middle' dominant-baseline='central'>Filtern / Zapfen</text>
+<text x='785.0' y='287.0' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='400' fill='#993C1D' text-anchor='middle' dominant-baseline='central'>Pins D5 · D5 · 24</text>
+<path d='M622 340 L668 340' fill='none' stroke='#5F5E5A' stroke-width='1.4' marker-end='url(#ar)'/>
+<rect x='670' y='310' width='230' height='62' rx='8' fill='#FAECE7' stroke='#993C1D' stroke-width='1.2'/>
+<text x='785.0' y='323.0' font-family='Helvetica, Arial, sans-serif' font-size='14' font-weight='700' fill='#712B13' text-anchor='middle' dominant-baseline='central'>Relais 3 → Ventil V3</text>
+<text x='785.0' y='341.0' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='400' fill='#993C1D' text-anchor='middle' dominant-baseline='central'>Standwasser → Abfluss</text>
+<text x='785.0' y='357.0' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='400' fill='#993C1D' text-anchor='middle' dominant-baseline='central'>Pins D6 · D6 · 26</text>
+<path d='M622 410 L668 410' fill='none' stroke='#5F5E5A' stroke-width='1.4' marker-end='url(#ar)'/>
+<rect x='670' y='380' width='230' height='62' rx='8' fill='#FAECE7' stroke='#993C1D' stroke-width='1.2'/>
+<text x='785.0' y='393.0' font-family='Helvetica, Arial, sans-serif' font-size='14' font-weight='700' fill='#712B13' text-anchor='middle' dominant-baseline='central'>Relais 4 → Ventil V4</text>
+<text x='785.0' y='411.0' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='400' fill='#993C1D' text-anchor='middle' dominant-baseline='central'>Membranspülung → Abfluss</text>
+<text x='785.0' y='427.0' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='400' fill='#993C1D' text-anchor='middle' dominant-baseline='central'>Pins D7 · D7 · 28</text>
+<rect x='660' y='160' width='250' height='290' rx='10' fill='none' stroke='#993C1D' stroke-dasharray='5 4'/>
+<text x='785' y='465' font-family='Helvetica, Arial, sans-serif' font-size='11' font-weight='400' fill='#993C1D' text-anchor='middle' dominant-baseline='central'>4-Kanal-Relaismodul (aktiv LOW/HIGH per #define)</text>
+<path d='M260 590 L300 590 L300 640 L640 640 L640 430 L658 430' fill='none' stroke='#854F0B' stroke-width='1.4' marker-end='url(#ar)'/>
+<text x='470' y='654' font-family='Helvetica, Arial, sans-serif' font-size='11' font-weight='400' fill='#854F0B' text-anchor='middle' dominant-baseline='central'>Ventilspannung über die Relaiskontakte</text>
+<path d='M912 300 L1000 300 L1000 458 L1076 458' fill='none' stroke='#185FA5' stroke-width='1.4' stroke-dasharray='6 4' marker-end='url(#ar)'/>
+<text x='990' y='290' font-family='Helvetica, Arial, sans-serif' font-size='11' font-weight='400' fill='#185FA5' text-anchor='end' dominant-baseline='central'>zu den Ventilen</text>
+<rect x='670' y='495' width='110' height='52' rx='8' fill='#FAECE7' stroke='#993C1D' stroke-width='1.2'/>
+<text x='725.0' y='512.0' font-family='Helvetica, Arial, sans-serif' font-size='14' font-weight='700' fill='#712B13' text-anchor='middle' dominant-baseline='central'>Buzzer</text>
+<text x='725.0' y='530.0' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='400' fill='#993C1D' text-anchor='middle' dominant-baseline='central'>D9 · D9 · 30</text>
+<rect x='790' y='495' width='120' height='52' rx='8' fill='#F1EFE8' stroke='#5F5E5A' stroke-width='1.2' stroke-dasharray='6 4'/>
+<text x='850.0' y='512.0' font-family='Helvetica, Arial, sans-serif' font-size='14' font-weight='700' fill='#444441' text-anchor='middle' dominant-baseline='central'>LED-Ring</text>
+<text x='850.0' y='530.0' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='400' fill='#5F5E5A' text-anchor='middle' dominant-baseline='central'>WS2812B · 31</text>
+<rect x='670' y='557' width='240' height='52' rx='8' fill='#F1EFE8' stroke='#5F5E5A' stroke-width='1.2' stroke-dasharray='6 4'/>
+<text x='790.0' y='574.0' font-family='Helvetica, Arial, sans-serif' font-size='14' font-weight='700' fill='#444441' text-anchor='middle' dominant-baseline='central'>OLED 128×32 (I2C)</text>
+<text x='790.0' y='592.0' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='400' fill='#5F5E5A' text-anchor='middle' dominant-baseline='central'>A4/A5 · – · 20/21</text>
+<path d='M622 520 L668 520' fill='none' stroke='#5F5E5A' stroke-width='1.4' marker-end='url(#ar)'/>
+<path d='M622 580 L668 580' fill='none' stroke='#5F5E5A' stroke-width='1.4' stroke-dasharray='6 4' marker-end='url(#ar)'/>
+<path d='M650 520 L650 485 L850 485 L850 493' fill='none' stroke='#5F5E5A' stroke-width='1.4' stroke-dasharray='6 4' marker-end='url(#ar)'/>
+<text x='470' y='674' font-family='Helvetica, Arial, sans-serif' font-size='11' font-weight='400' fill='#5F5E5A' text-anchor='start' dominant-baseline='central'>Pin-Angaben: config.h · config_elias.h · config_kai.h   (– = nicht belegt)   gestrichelt = optional</text>
+<rect x='1050' y='90' width='620' height='830' rx='14' fill='none' stroke='#B4B2A9' stroke-width='1'/>
+<text x='1070' y='114' font-family='Helvetica, Arial, sans-serif' font-size='18' font-weight='700' fill='#2C2C2A' text-anchor='start' dominant-baseline='central'>B · Hydraulik</text>
+<text x='1070' y='136' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='400' fill='#5F5E5A' text-anchor='start' dominant-baseline='central'>aus der Relaislogik abgeleitet – bitte mit eurer Verrohrung abgleichen</text>
+<rect x='1080' y='160' width='170' height='50' rx='8' fill='#E6F1FB' stroke='#185FA5' stroke-width='1.2'/>
+<text x='1165.0' y='176.0' font-family='Helvetica, Arial, sans-serif' font-size='14' font-weight='700' fill='#0C447C' text-anchor='middle' dominant-baseline='central'>Leitungswasser</text>
+<text x='1165.0' y='194.0' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='400' fill='#185FA5' text-anchor='middle' dominant-baseline='central'>Hauswasser</text>
+<rect x='1080' y='250' width='170' height='50' rx='8' fill='#E6F1FB' stroke='#185FA5' stroke-width='1.2'/>
+<text x='1165.0' y='266.0' font-family='Helvetica, Arial, sans-serif' font-size='14' font-weight='700' fill='#0C447C' text-anchor='middle' dominant-baseline='central'>Sedimentfilter</text>
+<text x='1165.0' y='284.0' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='400' fill='#185FA5' text-anchor='middle' dominant-baseline='central'>Vorfilter 1</text>
+<rect x='1080' y='340' width='170' height='50' rx='8' fill='#E6F1FB' stroke='#185FA5' stroke-width='1.2'/>
+<text x='1165.0' y='356.0' font-family='Helvetica, Arial, sans-serif' font-size='14' font-weight='700' fill='#0C447C' text-anchor='middle' dominant-baseline='central'>Aktivkohlefilter</text>
+<text x='1165.0' y='374.0' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='400' fill='#185FA5' text-anchor='middle' dominant-baseline='central'>Vorfilter 2</text>
+<rect x='1080' y='430' width='170' height='56' rx='8' fill='#FAECE7' stroke='#993C1D' stroke-width='1.2'/>
+<text x='1165.0' y='449.0' font-family='Helvetica, Arial, sans-serif' font-size='14' font-weight='700' fill='#712B13' text-anchor='middle' dominant-baseline='central'>V1 Zulauf</text>
+<text x='1165.0' y='467.0' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='400' fill='#993C1D' text-anchor='middle' dominant-baseline='central'>Relais 1</text>
+<rect x='1060' y='530' width='210' height='50' rx='8' fill='#F1EFE8' stroke='#5F5E5A' stroke-width='1.2' stroke-dasharray='6 4'/>
+<text x='1165.0' y='546.0' font-family='Helvetica, Arial, sans-serif' font-size='14' font-weight='700' fill='#444441' text-anchor='middle' dominant-baseline='central'>Injektionsport</text>
+<text x='1165.0' y='564.0' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='400' fill='#5F5E5A' text-anchor='middle' dominant-baseline='central'>Rückschlagventil oben</text>
+<path d='M1165 210 L1165 248' fill='none' stroke='#378ADD' stroke-width='5' stroke-linejoin='round' stroke-linecap='round'/>
+<path d='M1165 210 L1165.0 229.0' fill='none' stroke='#378ADD' stroke-width='1' marker-end='url(#arw)'/>
+<path d='M1165 300 L1165 338' fill='none' stroke='#378ADD' stroke-width='5' stroke-linejoin='round' stroke-linecap='round'/>
+<path d='M1165 300 L1165.0 319.0' fill='none' stroke='#378ADD' stroke-width='1' marker-end='url(#arw)'/>
+<path d='M1165 390 L1165 428' fill='none' stroke='#378ADD' stroke-width='5' stroke-linejoin='round' stroke-linecap='round'/>
+<path d='M1165 390 L1165.0 409.0' fill='none' stroke='#378ADD' stroke-width='1' marker-end='url(#arw)'/>
+<path d='M1165 486 L1165 528' fill='none' stroke='#378ADD' stroke-width='5' stroke-linejoin='round' stroke-linecap='round'/>
+<path d='M1165 486 L1165.0 507.0' fill='none' stroke='#378ADD' stroke-width='1' marker-end='url(#arw)'/>
+<path d='M1165 580 L1165 640 L1300 640' fill='none' stroke='#378ADD' stroke-width='5' stroke-linejoin='round' stroke-linecap='round'/>
+<path d='M1165 640 L1232.5 640.0' fill='none' stroke='#378ADD' stroke-width='1' marker-end='url(#arw)'/>
+<path d='M1165 580 L1165 645 L1318 645' fill='none' stroke='#378ADD' stroke-width='5' stroke-linejoin='round' stroke-linecap='round'/>
+<path d='M1165 645 L1241.5 645.0' fill='none' stroke='#378ADD' stroke-width='1' marker-end='url(#arw)'/>
+<rect x='1320' y='610' width='280' height='70' rx='35' fill='#E6F1FB' stroke='#185FA5' stroke-width='1.4'/>
+<text x='1460' y='635' font-family='Helvetica, Arial, sans-serif' font-size='15' font-weight='700' fill='#0C447C' text-anchor='middle' dominant-baseline='central'>RO-Membran</text>
+<text x='1460' y='655' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='400' fill='#185FA5' text-anchor='middle' dominant-baseline='central'>Feed → Permeat + Konzentrat</text>
+<path d='M1440 610 L1440 560' fill='none' stroke='#1D9E75' stroke-width='5' stroke-linejoin='round' stroke-linecap='round'/>
+<path d='M1440 560 L1370 560 L1370 446' fill='none' stroke='#1D9E75' stroke-width='5' stroke-linejoin='round' stroke-linecap='round'/>
+<path d='M1370 560 L1370.0 503.0' fill='none' stroke='#1D9E75' stroke-width='1' marker-end='url(#arw)'/>
+<path d='M1440 560 L1540 560 L1540 446' fill='none' stroke='#1D9E75' stroke-width='5' stroke-linejoin='round' stroke-linecap='round'/>
+<path d='M1540 560 L1540.0 503.0' fill='none' stroke='#1D9E75' stroke-width='1' marker-end='url(#arw)'/>
+<rect x='1300' y='390' width='140' height='54' rx='8' fill='#FAECE7' stroke='#993C1D' stroke-width='1.2'/>
+<text x='1370.0' y='408.0' font-family='Helvetica, Arial, sans-serif' font-size='14' font-weight='700' fill='#712B13' text-anchor='middle' dominant-baseline='central'>V2 Zapfen</text>
+<text x='1370.0' y='426.0' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='400' fill='#993C1D' text-anchor='middle' dominant-baseline='central'>Relais 2</text>
+<rect x='1470' y='390' width='140' height='54' rx='8' fill='#FAECE7' stroke='#993C1D' stroke-width='1.2'/>
+<text x='1540.0' y='408.0' font-family='Helvetica, Arial, sans-serif' font-size='14' font-weight='700' fill='#712B13' text-anchor='middle' dominant-baseline='central'>V3 Standwasser</text>
+<text x='1540.0' y='426.0' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='400' fill='#993C1D' text-anchor='middle' dominant-baseline='central'>Relais 3</text>
+<path d='M1370 390 L1370 330' fill='none' stroke='#1D9E75' stroke-width='5' stroke-linejoin='round' stroke-linecap='round'/>
+<path d='M1370 390 L1370.0 360.0' fill='none' stroke='#1D9E75' stroke-width='1' marker-end='url(#arw)'/>
+<rect x='1300' y='260' width='140' height='68' rx='8' fill='#E6F1FB' stroke='#185FA5' stroke-width='1.2'/>
+<text x='1370.0' y='276.0' font-family='Helvetica, Arial, sans-serif' font-size='14' font-weight='700' fill='#0C447C' text-anchor='middle' dominant-baseline='central'>Zapfhahn</text>
+<text x='1370.0' y='294.0' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='400' fill='#185FA5' text-anchor='middle' dominant-baseline='central'>Reinwasser</text>
+<text x='1370.0' y='310.0' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='400' fill='#185FA5' text-anchor='middle' dominant-baseline='central'>(Permeat)</text>
+<path d='M1610 417 L1645 417 L1645 887 L1424 887' fill='none' stroke='#888780' stroke-width='5' stroke-linejoin='round' stroke-linecap='round'/>
+<path d='M1645 887 L1534.5 887.0' fill='none' stroke='#888780' stroke-width='1' marker-end='url(#arw)'/>
+<path d='M1580 676 L1590 690 L1590 822' fill='none' stroke='#888780' stroke-width='5' stroke-linejoin='round' stroke-linecap='round'/>
+<path d='M1590 760 L1562 760' fill='none' stroke='#888780' stroke-width='5' stroke-linejoin='round' stroke-linecap='round'/>
+<path d='M1590 760 L1576.0 760.0' fill='none' stroke='#888780' stroke-width='1' marker-end='url(#arw)'/>
+<path d='M1590 822 L1562 822' fill='none' stroke='#888780' stroke-width='5' stroke-linejoin='round' stroke-linecap='round'/>
+<path d='M1590 822 L1576.0 822.0' fill='none' stroke='#888780' stroke-width='1' marker-end='url(#arw)'/>
+<rect x='1420' y='735' width='140' height='50' rx='8' fill='#F1EFE8' stroke='#5F5E5A' stroke-width='1.2'/>
+<text x='1490.0' y='751.0' font-family='Helvetica, Arial, sans-serif' font-size='14' font-weight='700' fill='#444441' text-anchor='middle' dominant-baseline='central'>Durchfluss-</text>
+<text x='1490.0' y='769.0' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='400' fill='#5F5E5A' text-anchor='middle' dominant-baseline='central'>begrenzer</text>
+<rect x='1420' y='795' width='140' height='54' rx='8' fill='#FAECE7' stroke='#993C1D' stroke-width='1.2'/>
+<text x='1490.0' y='813.0' font-family='Helvetica, Arial, sans-serif' font-size='14' font-weight='700' fill='#712B13' text-anchor='middle' dominant-baseline='central'>V4 Spülung</text>
+<text x='1490.0' y='831.0' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='400' fill='#993C1D' text-anchor='middle' dominant-baseline='central'>Relais 4</text>
+<path d='M1420 760 L1380 760 L1380 863' fill='none' stroke='#888780' stroke-width='5' stroke-linejoin='round' stroke-linecap='round'/>
+<path d='M1380 760 L1380.0 811.5' fill='none' stroke='#888780' stroke-width='1' marker-end='url(#arw)'/>
+<path d='M1420 822 L1380 822' fill='none' stroke='#888780' stroke-width='4' stroke-linejoin='round' stroke-linecap='round'/>
+<rect x='1260' y='865' width='160' height='44' rx='8' fill='#F1EFE8' stroke='#5F5E5A' stroke-width='1.2'/>
+<text x='1340.0' y='887.0' font-family='Helvetica, Arial, sans-serif' font-size='14' font-weight='700' fill='#444441' text-anchor='middle' dominant-baseline='central'>Abfluss</text>
+<text x='1600' y='700' font-family='Helvetica, Arial, sans-serif' font-size='11' font-weight='400' fill='#5F5E5A' text-anchor='start' dominant-baseline='central'>Konzentrat</text>
+<text x='1450' y='590' font-family='Helvetica, Arial, sans-serif' font-size='11' font-weight='400' fill='#0F6E56' text-anchor='start' dominant-baseline='central'>Permeat</text>
+<text x='1175' y='610' font-family='Helvetica, Arial, sans-serif' font-size='11' font-weight='400' fill='#185FA5' text-anchor='start' dominant-baseline='central'>Feed</text>
+<path d='M1080 690 L1114 690' stroke='#378ADD' stroke-width='5' stroke-linecap='round'/>
+<text x='1124' y='690' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='400' fill='#444441' text-anchor='start' dominant-baseline='central'>Feed / Leitungswasser</text>
+<path d='M1080 712 L1114 712' stroke='#1D9E75' stroke-width='5' stroke-linecap='round'/>
+<text x='1124' y='712' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='400' fill='#444441' text-anchor='start' dominant-baseline='central'>Permeat (Reinwasser)</text>
+<path d='M1080 734 L1114 734' stroke='#888780' stroke-width='5' stroke-linecap='round'/>
+<text x='1124' y='734' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='400' fill='#444441' text-anchor='start' dominant-baseline='central'>Konzentrat / Abwasser</text>
+<text x='1080' y='770' font-family='Helvetica, Arial, sans-serif' font-size='11' font-weight='400' fill='#A32D2D' text-anchor='start' dominant-baseline='central'>Annahmen: Injektionsport auf der Feed-Seite;</text>
+<text x='1080' y='786' font-family='Helvetica, Arial, sans-serif' font-size='11' font-weight='400' fill='#A32D2D' text-anchor='start' dominant-baseline='central'>Konzentrat über Durchflussbegrenzer,</text>
+<text x='1080' y='802' font-family='Helvetica, Arial, sans-serif' font-size='11' font-weight='400' fill='#A32D2D' text-anchor='start' dominant-baseline='central'>V4 überbrückt ihn bei der Membranspülung.</text>
+<rect x='30' y='710' width='1000' height='660' rx='14' fill='none' stroke='#B4B2A9' stroke-width='1'/>
+<text x='50' y='734' font-family='Helvetica, Arial, sans-serif' font-size='18' font-weight='700' fill='#2C2C2A' text-anchor='start' dominant-baseline='central'>C · Betriebsarten (Firmware v6)</text>
+<text x='50' y='756' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='400' fill='#5F5E5A' text-anchor='start' dominant-baseline='central'>genau eine Betriebsart aktiv · Stopp: Taster 1 lang oder Taster 2 kurz → alle Ventile zu → Leerlauf</text>
+<rect x='410' y='910' width='180' height='70' rx='8' fill='#EEEDFE' stroke='#534AB7' stroke-width='1.2'/>
+<text x='500.0' y='936.0' font-family='Helvetica, Arial, sans-serif' font-size='14' font-weight='700' fill='#3C3489' text-anchor='middle' dominant-baseline='central'>LEERLAUF</text>
+<text x='500.0' y='954.0' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='400' fill='#534AB7' text-anchor='middle' dominant-baseline='central'>MODE_IDLE</text>
+<rect x='70' y='780' width='200' height='56' rx='8' fill='#E1F5EE' stroke='#0F6E56' stroke-width='1.2'/>
+<text x='170.0' y='799.0' font-family='Helvetica, Arial, sans-serif' font-size='14' font-weight='700' fill='#085041' text-anchor='middle' dominant-baseline='central'>Wasser zapfen</text>
+<text x='170.0' y='817.0' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='400' fill='#0F6E56' text-anchor='middle' dominant-baseline='central'>Taster 1 kurz</text>
+<path d='M170 838 L170 870 L500 870 L500 906' fill='none' stroke='#0F6E56' stroke-width='1.2' marker-end='url(#ar)'/>
+<rect x='300' y='780' width='200' height='56' rx='8' fill='#E1F5EE' stroke='#0F6E56' stroke-width='1.2'/>
+<text x='400.0' y='799.0' font-family='Helvetica, Arial, sans-serif' font-size='14' font-weight='700' fill='#085041' text-anchor='middle' dominant-baseline='central'>Nachspülung</text>
+<text x='400.0' y='817.0' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='400' fill='#0F6E56' text-anchor='middle' dominant-baseline='central'>3 min nach dem Zapfen</text>
+<path d='M400 838 L400 870 L500 870 L500 906' fill='none' stroke='#0F6E56' stroke-width='1.2' marker-end='url(#ar)'/>
+<rect x='530' y='780' width='200' height='56' rx='8' fill='#E1F5EE' stroke='#0F6E56' stroke-width='1.2'/>
+<text x='630.0' y='799.0' font-family='Helvetica, Arial, sans-serif' font-size='14' font-weight='700' fill='#085041' text-anchor='middle' dominant-baseline='central'>Auto-Spülung</text>
+<text x='630.0' y='817.0' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='400' fill='#0F6E56' text-anchor='middle' dominant-baseline='central'>alle 6 h ohne Nutzung</text>
+<path d='M630 838 L630 870 L500 870 L500 906' fill='none' stroke='#0F6E56' stroke-width='1.2' marker-end='url(#ar)'/>
+<rect x='760' y='780' width='200' height='56' rx='8' fill='#E1F5EE' stroke='#0F6E56' stroke-width='1.2'/>
+<text x='860.0' y='799.0' font-family='Helvetica, Arial, sans-serif' font-size='14' font-weight='700' fill='#085041' text-anchor='middle' dominant-baseline='central'>Filterwechsel</text>
+<text x='860.0' y='817.0' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='400' fill='#0F6E56' text-anchor='middle' dominant-baseline='central'>Taster 4 lang</text>
+<path d='M860 838 L860 870 L500 870 L500 906' fill='none' stroke='#0F6E56' stroke-width='1.2' marker-end='url(#ar)'/>
+<rect x='70' y='1020' width='200' height='56' rx='8' fill='#E1F5EE' stroke='#0F6E56' stroke-width='1.2'/>
+<text x='170.0' y='1039.0' font-family='Helvetica, Arial, sans-serif' font-size='14' font-weight='700' fill='#085041' text-anchor='middle' dominant-baseline='central'>Desinfektion</text>
+<text x='170.0' y='1057.0' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='400' fill='#0F6E56' text-anchor='middle' dominant-baseline='central'>Taster 3 lang</text>
+<path d='M270 1048 L300 1048 L300 945 L406 945' fill='none' stroke='#0F6E56' stroke-width='1.2' marker-end='url(#ar)'/>
+<rect x='760' y='1020' width='200' height='56' rx='8' fill='#FCEBEB' stroke='#A32D2D' stroke-width='1.2'/>
+<text x='860.0' y='1039.0' font-family='Helvetica, Arial, sans-serif' font-size='14' font-weight='700' fill='#791F1F' text-anchor='middle' dominant-baseline='central'>AQUASTOP</text>
+<text x='860.0' y='1057.0' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='400' fill='#A32D2D' text-anchor='middle' dominant-baseline='central'>5× nass · bis Reset</text>
+<path d='M594 945 L860 945 L860 1016' fill='none' stroke='#A32D2D' stroke-width='1.2' marker-end='url(#ar)'/>
+<text x='728' y='933' font-family='Helvetica, Arial, sans-serif' font-size='11' font-weight='400' fill='#A32D2D' text-anchor='middle' dominant-baseline='central'>aus jeder Betriebsart</text>
+<text x='500' y='1000' font-family='Helvetica, Arial, sans-serif' font-size='11' font-weight='400' fill='#5F5E5A' text-anchor='middle' dominant-baseline='central'>Zapfen unterbricht Auto-/Nachspülung;</text>
+<text x='500' y='1016' font-family='Helvetica, Arial, sans-serif' font-size='11' font-weight='400' fill='#5F5E5A' text-anchor='middle' dominant-baseline='central'>während Desinfektion / Filterwechsel abgelehnt</text>
+<rect x='60' y='1100' width='330' height='26' fill='#F1EFE8' stroke='#D3D1C7'/>
+<text x='70' y='1113' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='700' fill='#444441' text-anchor='start' dominant-baseline='central'>Schritt</text>
+<rect x='390' y='1100' width='60' height='26' fill='#F1EFE8' stroke='#D3D1C7'/>
+<text x='420.0' y='1113' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='700' fill='#444441' text-anchor='middle' dominant-baseline='central'>V1</text>
+<rect x='450' y='1100' width='60' height='26' fill='#F1EFE8' stroke='#D3D1C7'/>
+<text x='480.0' y='1113' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='700' fill='#444441' text-anchor='middle' dominant-baseline='central'>V2</text>
+<rect x='510' y='1100' width='60' height='26' fill='#F1EFE8' stroke='#D3D1C7'/>
+<text x='540.0' y='1113' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='700' fill='#444441' text-anchor='middle' dominant-baseline='central'>V3</text>
+<rect x='570' y='1100' width='60' height='26' fill='#F1EFE8' stroke='#D3D1C7'/>
+<text x='600.0' y='1113' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='700' fill='#444441' text-anchor='middle' dominant-baseline='central'>V4</text>
+<rect x='630' y='1100' width='120' height='26' fill='#F1EFE8' stroke='#D3D1C7'/>
+<text x='690.0' y='1113' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='700' fill='#444441' text-anchor='middle' dominant-baseline='central'>Elias</text>
+<rect x='750' y='1100' width='120' height='26' fill='#F1EFE8' stroke='#D3D1C7'/>
+<text x='810.0' y='1113' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='700' fill='#444441' text-anchor='middle' dominant-baseline='central'>Kai</text>
+<rect x='60' y='1126' width='330' height='26' fill='#FFFFFF' stroke='#D3D1C7'/>
+<text x='70' y='1139' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='400' fill='#2C2C2A' text-anchor='start' dominant-baseline='central'>Membranspülung (Vorspülung)*</text>
+<rect x='390' y='1126' width='60' height='26' fill='#FFFFFF' stroke='#D3D1C7'/>
+<text x='420.0' y='1139' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='700' fill='#993C1D' text-anchor='middle' dominant-baseline='central'>●</text>
+<rect x='450' y='1126' width='60' height='26' fill='#FFFFFF' stroke='#D3D1C7'/>
+<text x='480.0' y='1139' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='700' fill='#993C1D' text-anchor='middle' dominant-baseline='central'></text>
+<rect x='510' y='1126' width='60' height='26' fill='#FFFFFF' stroke='#D3D1C7'/>
+<text x='540.0' y='1139' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='700' fill='#993C1D' text-anchor='middle' dominant-baseline='central'></text>
+<rect x='570' y='1126' width='60' height='26' fill='#FFFFFF' stroke='#D3D1C7'/>
+<text x='600.0' y='1139' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='700' fill='#993C1D' text-anchor='middle' dominant-baseline='central'>●</text>
+<rect x='630' y='1126' width='120' height='26' fill='#FFFFFF' stroke='#D3D1C7'/>
+<text x='690.0' y='1139' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='400' fill='#2C2C2A' text-anchor='middle' dominant-baseline='central'>10 s</text>
+<rect x='750' y='1126' width='120' height='26' fill='#FFFFFF' stroke='#D3D1C7'/>
+<text x='810.0' y='1139' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='400' fill='#2C2C2A' text-anchor='middle' dominant-baseline='central'>15 s</text>
+<rect x='60' y='1152' width='330' height='26' fill='#FFFFFF' stroke='#D3D1C7'/>
+<text x='70' y='1165' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='400' fill='#2C2C2A' text-anchor='start' dominant-baseline='central'>Standwasserspülung (Vorspülung)*</text>
+<rect x='390' y='1152' width='60' height='26' fill='#FFFFFF' stroke='#D3D1C7'/>
+<text x='420.0' y='1165' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='700' fill='#993C1D' text-anchor='middle' dominant-baseline='central'>●</text>
+<rect x='450' y='1152' width='60' height='26' fill='#FFFFFF' stroke='#D3D1C7'/>
+<text x='480.0' y='1165' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='700' fill='#993C1D' text-anchor='middle' dominant-baseline='central'></text>
+<rect x='510' y='1152' width='60' height='26' fill='#FFFFFF' stroke='#D3D1C7'/>
+<text x='540.0' y='1165' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='700' fill='#993C1D' text-anchor='middle' dominant-baseline='central'>●</text>
+<rect x='570' y='1152' width='60' height='26' fill='#FFFFFF' stroke='#D3D1C7'/>
+<text x='600.0' y='1165' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='700' fill='#993C1D' text-anchor='middle' dominant-baseline='central'></text>
+<rect x='630' y='1152' width='120' height='26' fill='#FFFFFF' stroke='#D3D1C7'/>
+<text x='690.0' y='1165' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='400' fill='#2C2C2A' text-anchor='middle' dominant-baseline='central'>90 s</text>
+<rect x='750' y='1152' width='120' height='26' fill='#FFFFFF' stroke='#D3D1C7'/>
+<text x='810.0' y='1165' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='400' fill='#2C2C2A' text-anchor='middle' dominant-baseline='central'>90 s</text>
+<rect x='60' y='1178' width='330' height='26' fill='#FFFFFF' stroke='#D3D1C7'/>
+<text x='70' y='1191' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='400' fill='#2C2C2A' text-anchor='start' dominant-baseline='central'>Filtern / Zapfen</text>
+<rect x='390' y='1178' width='60' height='26' fill='#FFFFFF' stroke='#D3D1C7'/>
+<text x='420.0' y='1191' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='700' fill='#993C1D' text-anchor='middle' dominant-baseline='central'>●</text>
+<rect x='450' y='1178' width='60' height='26' fill='#FFFFFF' stroke='#D3D1C7'/>
+<text x='480.0' y='1191' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='700' fill='#993C1D' text-anchor='middle' dominant-baseline='central'>●</text>
+<rect x='510' y='1178' width='60' height='26' fill='#FFFFFF' stroke='#D3D1C7'/>
+<text x='540.0' y='1191' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='700' fill='#993C1D' text-anchor='middle' dominant-baseline='central'></text>
+<rect x='570' y='1178' width='60' height='26' fill='#FFFFFF' stroke='#D3D1C7'/>
+<text x='600.0' y='1191' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='700' fill='#993C1D' text-anchor='middle' dominant-baseline='central'></text>
+<rect x='630' y='1178' width='120' height='26' fill='#FFFFFF' stroke='#D3D1C7'/>
+<text x='690.0' y='1191' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='400' fill='#2C2C2A' text-anchor='middle' dominant-baseline='central'>215 s</text>
+<rect x='750' y='1178' width='120' height='26' fill='#FFFFFF' stroke='#D3D1C7'/>
+<text x='810.0' y='1191' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='400' fill='#2C2C2A' text-anchor='middle' dominant-baseline='central'>6 min</text>
+<rect x='60' y='1204' width='330' height='26' fill='#FFFFFF' stroke='#D3D1C7'/>
+<text x='70' y='1217' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='400' fill='#2C2C2A' text-anchor='start' dominant-baseline='central'>Nachspülung Membran</text>
+<rect x='390' y='1204' width='60' height='26' fill='#FFFFFF' stroke='#D3D1C7'/>
+<text x='420.0' y='1217' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='700' fill='#993C1D' text-anchor='middle' dominant-baseline='central'>●</text>
+<rect x='450' y='1204' width='60' height='26' fill='#FFFFFF' stroke='#D3D1C7'/>
+<text x='480.0' y='1217' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='700' fill='#993C1D' text-anchor='middle' dominant-baseline='central'></text>
+<rect x='510' y='1204' width='60' height='26' fill='#FFFFFF' stroke='#D3D1C7'/>
+<text x='540.0' y='1217' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='700' fill='#993C1D' text-anchor='middle' dominant-baseline='central'></text>
+<rect x='570' y='1204' width='60' height='26' fill='#FFFFFF' stroke='#D3D1C7'/>
+<text x='600.0' y='1217' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='700' fill='#993C1D' text-anchor='middle' dominant-baseline='central'>●</text>
+<rect x='630' y='1204' width='120' height='26' fill='#FFFFFF' stroke='#D3D1C7'/>
+<text x='690.0' y='1217' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='400' fill='#2C2C2A' text-anchor='middle' dominant-baseline='central'>15 s</text>
+<rect x='750' y='1204' width='120' height='26' fill='#FFFFFF' stroke='#D3D1C7'/>
+<text x='810.0' y='1217' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='400' fill='#2C2C2A' text-anchor='middle' dominant-baseline='central'>20 s</text>
+<rect x='60' y='1230' width='330' height='26' fill='#FFFFFF' stroke='#D3D1C7'/>
+<text x='70' y='1243' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='400' fill='#2C2C2A' text-anchor='start' dominant-baseline='central'>Filterwechsel: Membran + Standwasser</text>
+<rect x='390' y='1230' width='60' height='26' fill='#FFFFFF' stroke='#D3D1C7'/>
+<text x='420.0' y='1243' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='700' fill='#993C1D' text-anchor='middle' dominant-baseline='central'>●</text>
+<rect x='450' y='1230' width='60' height='26' fill='#FFFFFF' stroke='#D3D1C7'/>
+<text x='480.0' y='1243' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='700' fill='#993C1D' text-anchor='middle' dominant-baseline='central'></text>
+<rect x='510' y='1230' width='60' height='26' fill='#FFFFFF' stroke='#D3D1C7'/>
+<text x='540.0' y='1243' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='700' fill='#993C1D' text-anchor='middle' dominant-baseline='central'>(●)</text>
+<rect x='570' y='1230' width='60' height='26' fill='#FFFFFF' stroke='#D3D1C7'/>
+<text x='600.0' y='1243' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='700' fill='#993C1D' text-anchor='middle' dominant-baseline='central'>(●)</text>
+<rect x='630' y='1230' width='120' height='26' fill='#FFFFFF' stroke='#D3D1C7'/>
+<text x='690.0' y='1243' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='400' fill='#2C2C2A' text-anchor='middle' dominant-baseline='central'>15 + 15 min</text>
+<rect x='750' y='1230' width='120' height='26' fill='#FFFFFF' stroke='#D3D1C7'/>
+<text x='810.0' y='1243' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='400' fill='#2C2C2A' text-anchor='middle' dominant-baseline='central'>15 + 15 min</text>
+<rect x='60' y='1256' width='330' height='26' fill='#FFFFFF' stroke='#D3D1C7'/>
+<text x='70' y='1269' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='400' fill='#2C2C2A' text-anchor='start' dominant-baseline='central'>Desinfektion: H₂O₂ einspritzen (2×)</text>
+<rect x='390' y='1256' width='60' height='26' fill='#FFFFFF' stroke='#D3D1C7'/>
+<text x='420.0' y='1269' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='700' fill='#993C1D' text-anchor='middle' dominant-baseline='central'></text>
+<rect x='450' y='1256' width='60' height='26' fill='#FFFFFF' stroke='#D3D1C7'/>
+<text x='480.0' y='1269' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='700' fill='#993C1D' text-anchor='middle' dominant-baseline='central'></text>
+<rect x='510' y='1256' width='60' height='26' fill='#FFFFFF' stroke='#D3D1C7'/>
+<text x='540.0' y='1269' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='700' fill='#993C1D' text-anchor='middle' dominant-baseline='central'></text>
+<rect x='570' y='1256' width='60' height='26' fill='#FFFFFF' stroke='#D3D1C7'/>
+<text x='600.0' y='1269' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='700' fill='#993C1D' text-anchor='middle' dominant-baseline='central'>●</text>
+<rect x='630' y='1256' width='120' height='26' fill='#FFFFFF' stroke='#D3D1C7'/>
+<text x='690.0' y='1269' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='400' fill='#2C2C2A' text-anchor='middle' dominant-baseline='central'>2 min</text>
+<rect x='750' y='1256' width='120' height='26' fill='#FFFFFF' stroke='#D3D1C7'/>
+<text x='810.0' y='1269' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='400' fill='#2C2C2A' text-anchor='middle' dominant-baseline='central'>2 min</text>
+<rect x='60' y='1282' width='330' height='26' fill='#FFFFFF' stroke='#D3D1C7'/>
+<text x='70' y='1295' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='400' fill='#2C2C2A' text-anchor='start' dominant-baseline='central'>Desinfektion: Pulse (7×) + Pause</text>
+<rect x='390' y='1282' width='60' height='26' fill='#FFFFFF' stroke='#D3D1C7'/>
+<text x='420.0' y='1295' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='700' fill='#993C1D' text-anchor='middle' dominant-baseline='central'>●</text>
+<rect x='450' y='1282' width='60' height='26' fill='#FFFFFF' stroke='#D3D1C7'/>
+<text x='480.0' y='1295' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='700' fill='#993C1D' text-anchor='middle' dominant-baseline='central'>●</text>
+<rect x='510' y='1282' width='60' height='26' fill='#FFFFFF' stroke='#D3D1C7'/>
+<text x='540.0' y='1295' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='700' fill='#993C1D' text-anchor='middle' dominant-baseline='central'></text>
+<rect x='570' y='1282' width='60' height='26' fill='#FFFFFF' stroke='#D3D1C7'/>
+<text x='600.0' y='1295' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='700' fill='#993C1D' text-anchor='middle' dominant-baseline='central'></text>
+<rect x='630' y='1282' width='120' height='26' fill='#FFFFFF' stroke='#D3D1C7'/>
+<text x='690.0' y='1295' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='400' fill='#2C2C2A' text-anchor='middle' dominant-baseline='central'>8 s / 10 min</text>
+<rect x='750' y='1282' width='120' height='26' fill='#FFFFFF' stroke='#D3D1C7'/>
+<text x='810.0' y='1295' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='400' fill='#2C2C2A' text-anchor='middle' dominant-baseline='central'>8 s / 10 min</text>
+<rect x='60' y='1308' width='330' height='26' fill='#FFFFFF' stroke='#D3D1C7'/>
+<text x='70' y='1321' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='400' fill='#2C2C2A' text-anchor='start' dominant-baseline='central'>Desinfektion: Endspülungen (3×)</text>
+<rect x='390' y='1308' width='60' height='26' fill='#FFFFFF' stroke='#D3D1C7'/>
+<text x='420.0' y='1321' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='700' fill='#993C1D' text-anchor='middle' dominant-baseline='central'>●</text>
+<rect x='450' y='1308' width='60' height='26' fill='#FFFFFF' stroke='#D3D1C7'/>
+<text x='480.0' y='1321' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='700' fill='#993C1D' text-anchor='middle' dominant-baseline='central'>(●)</text>
+<rect x='510' y='1308' width='60' height='26' fill='#FFFFFF' stroke='#D3D1C7'/>
+<text x='540.0' y='1321' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='700' fill='#993C1D' text-anchor='middle' dominant-baseline='central'>(●)</text>
+<rect x='570' y='1308' width='60' height='26' fill='#FFFFFF' stroke='#D3D1C7'/>
+<text x='600.0' y='1321' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='700' fill='#993C1D' text-anchor='middle' dominant-baseline='central'>(●)</text>
+<rect x='630' y='1308' width='120' height='26' fill='#FFFFFF' stroke='#D3D1C7'/>
+<text x='690.0' y='1321' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='400' fill='#2C2C2A' text-anchor='middle' dominant-baseline='central'>je 5 min</text>
+<rect x='750' y='1308' width='120' height='26' fill='#FFFFFF' stroke='#D3D1C7'/>
+<text x='810.0' y='1321' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='400' fill='#2C2C2A' text-anchor='middle' dominant-baseline='central'>je 5 min</text>
+<text x='60' y='1352' font-family='Helvetica, Arial, sans-serif' font-size='11' font-weight='400' fill='#5F5E5A' text-anchor='start' dominant-baseline='central'>* entfällt, wenn die letzte Spülung weniger als 15 min zurückliegt   (●) = nacheinander, nicht gleichzeitig   ● = Ventil offen</text>
+<rect x='1050' y='940' width='620' height='430' rx='14' fill='none' stroke='#B4B2A9' stroke-width='1'/>
+<text x='1070' y='964' font-family='Helvetica, Arial, sans-serif' font-size='18' font-weight='700' fill='#2C2C2A' text-anchor='start' dominant-baseline='central'>D · Sicherheit und Hinweise</text>
+<text x='1070' y='986' font-family='Helvetica, Arial, sans-serif' font-size='12' font-weight='400' fill='#5F5E5A' text-anchor='start' dominant-baseline='central'>gilt für alle Konfigurationen</text>
+<text x='1074' y='1020' font-family='Helvetica, Arial, sans-serif' font-size='13' font-weight='400' fill='#2C2C2A' text-anchor='start' dominant-baseline='central'>Aquastop: Sensor jede Sekunde, 5 nasse Messungen in Folge →</text>
+<text x='1074' y='1044' font-family='Helvetica, Arial, sans-serif' font-size='13' font-weight='400' fill='#2C2C2A' text-anchor='start' dominant-baseline='central'>   alle Ventile zu, Alarmton, Sperre bis Reset (kein Auto-Neustart).</text>
+<text x='1074' y='1068' font-family='Helvetica, Arial, sans-serif' font-size='13' font-weight='400' fill='#2C2C2A' text-anchor='start' dominant-baseline='central'>Nach dem Einschalten sind alle Relais AUS (Ventile geschlossen).</text>
+<text x='1074' y='1092' font-family='Helvetica, Arial, sans-serif' font-size='13' font-weight='400' fill='#2C2C2A' text-anchor='start' dominant-baseline='central'>Relais werden mit Pause (rst) nacheinander geschaltet → kleinere</text>
+<text x='1074' y='1116' font-family='Helvetica, Arial, sans-serif' font-size='13' font-weight='400' fill='#2C2C2A' text-anchor='start' dominant-baseline='central'>   Stromspitzen; in dieser Zeit (3 × rst) reagieren keine Taster.</text>
+<text x='1074' y='1140' font-family='Helvetica, Arial, sans-serif' font-size='13' font-weight='400' fill='#2C2C2A' text-anchor='start' dominant-baseline='central'>Desinfektion: H₂O₂ 3 % mit Einwegspritze, Anleitung im Code.</text>
+<text x='1074' y='1164' font-family='Helvetica, Arial, sans-serif' font-size='13' font-weight='400' fill='#2C2C2A' text-anchor='start' dominant-baseline='central'>   Nach Abbruch steht ggf. H₂O₂ im System → nächstes Zapfen spült vor.</text>
+<text x='1074' y='1188' font-family='Helvetica, Arial, sans-serif' font-size='13' font-weight='400' fill='#2C2C2A' text-anchor='start' dominant-baseline='central'>A6/A7 gibt es nur beim Nano / bei SMD-Boards, nicht beim DIP-Uno.</text>
+<text x='1074' y='1212' font-family='Helvetica, Arial, sans-serif' font-size='13' font-weight='400' fill='#2C2C2A' text-anchor='start' dominant-baseline='central'>Ventilnetzteil fachgerecht anschließen; bei Netzspannung</text>
+<text x='1074' y='1236' font-family='Helvetica, Arial, sans-serif' font-size='13' font-weight='400' fill='#2C2C2A' text-anchor='start' dominant-baseline='central'>   Elektrofachkraft hinzuziehen. Wasser und Strom trennen!</text>
+<text x='1074' y='1260' font-family='Helvetica, Arial, sans-serif' font-size='13' font-weight='400' fill='#2C2C2A' text-anchor='start' dominant-baseline='central'>Hydraulik in Teil B ist aus der Software abgeleitet –</text>
+<text x='1074' y='1284' font-family='Helvetica, Arial, sans-serif' font-size='13' font-weight='400' fill='#2C2C2A' text-anchor='start' dominant-baseline='central'>   vor dem Nachbau mit der realen Anlage vergleichen.</text>
+</svg>

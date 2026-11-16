@@ -1,0 +1,12 @@
+# build output
+build/
+*.hex
+*.elf
+*.o
+
+# editor / OS
+.DS_Store
+Thumbs.db
+.vscode/
+*.swp
+__pycache__/
