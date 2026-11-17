@@ -21,6 +21,7 @@ typedef bool boolean;
 #define A5 19
 #define A6 20
 #define A7 21
+#define LED_BUILTIN 13
 
 class __FlashStringHelper;
 #define F(s) (reinterpret_cast<const __FlashStringHelper *>(s))

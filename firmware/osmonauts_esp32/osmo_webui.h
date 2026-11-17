@@ -38,6 +38,8 @@ button:disabled{opacity:.45;cursor:default}
 .kv span:nth-child(odd){color:var(--m)}
 .note{font-size:12px;color:var(--m);margin-top:8px;line-height:1.5}
 .alarm{background:#fdeeee;border:2px solid var(--r)}
+.due{background:#fff4e6;border:2px solid #E8860C}
+.due #fdays{color:#C25E00}
 #msg{font-size:13px;min-height:18px;color:var(--g)}
 label{display:flex;gap:8px;align-items:flex-start;font-size:14px;margin:6px 0}
 input[type=password]{font:inherit;padding:7px;border:1px solid #c9ced3;border-radius:8px;width:100%}
@@ -74,19 +76,35 @@ footer a{color:var(--m)}
     <div class="note">Wasser zapfen geht aus Sicherheitsgründen nur am Gerät (Taster 1). Der Aquastop arbeitet unabhängig vom WLAN.</div>
   </section>
 
+  <section class="card" id="filtercard">
+    <h2>Filterwechsel</h2>
+    <div id="fdays" style="font-size:22px;font-weight:700">–</div>
+    <div class="bar"><div id="fbar"></div></div>
+    <div class="kv">
+      <span>Nächster Wechsel</span><span id="fnext">–</span>
+      <span>Letzter Wechsel</span><span id="flast">–</span>
+      <span>Intervall</span><span id="fint">–</span>
+    </div>
+    <div class="btns" style="margin-top:10px">
+      <button onclick="cmd('filterreset','Filter gewechselt? Der Countdown startet dann neu. (Die Filterwechsel-Spülung setzt ihn auch automatisch zurück.)')">Filter gewechselt – Countdown neu starten</button>
+    </div>
+    <div class="note">Ist der Wechsel fällig, blinkt die Status-LED doppelt, am Gerät ertönen nach dem Zapfen drei kurze Töne und das Display zeigt „FILTER CHANGE DUE“.</div>
+  </section>
+
   <section class="card">
     <h2>Anlage</h2>
     <div class="kv">
       <span>Aquastop-Sensor</span><span id="aq">–</span>
       <span>Nächste Auto-Spülung</span><span id="nextflush">–</span>
       <span>Nachspülung</span><span id="post">–</span>
+      <span>Datum / Uhrzeit</span><span id="clock">–</span>
       <span>Laufzeit seit Start</span><span id="uptime">–</span>
       <span>WLAN</span><span id="wifi">–</span>
     </div>
   </section>
 
   <section class="card">
-    <h2>Statistik (nur auf diesem Gerät)</h2>
+    <h2>Statistik (nur auf diesem Gerät)<span id="since" style="text-transform:none;letter-spacing:0"></span></h2>
     <div class="kv" id="stats"></div>
   </section>
 
@@ -111,6 +129,7 @@ footer a{color:var(--m)}
     <h2>Einstellungen</h2>
     <label><input type="checkbox" id="upd"> <span>Einmal täglich nach Updates suchen<br><small class="note">Dabei wird eine kleine Datei von GitHub geladen. GitHub zählt die Abrufe – so sehen die Entwickler, wie viele Osmonauts aktiv sind. Es werden keine Geräte- oder Nutzungsdaten übertragen; GitHub sieht wie bei jedem Abruf die IP-Adresse deines Anschlusses.</small></span></label>
     <label><input type="checkbox" id="auto"> <span>Updates automatisch im Leerlauf installieren</span></label>
+    <label style="display:block">Filterwechsel-Intervall in Tagen (7–1095)<input type="number" id="fdaysin" min="7" max="1095" style="font:inherit;padding:7px;border:1px solid #c9ced3;border-radius:8px;width:100%"></label>
     <label style="display:block">Neues Passwort für diese Seite (mind. 8 Zeichen, leer = unverändert)<input type="password" id="pw" autocomplete="new-password"></label>
     <div class="btns" style="margin-top:8px">
       <button class="pri" onclick="save()">Speichern</button>
@@ -148,13 +167,24 @@ async function poll(){
     $('fwnew').textContent=u.busy?'… '+(u.progress?u.progress+' %':'prüfe'):u.error?u.error:u.available?`${u.latest} verfügbar`:u.checked?`${u.latest||d.version} – aktuell`:'noch nicht geprüft';
     $('inst').disabled=!u.available||u.busy||d.mode!=0;
     if(d.message)$('msg').textContent=d.message;
-    if(first){$('upd').checked=d.settings.upd;$('auto').checked=d.settings.auto;first=false;}
+    const f=d.filter,day=s=>new Date(s*1000).toLocaleDateString('de-DE');
+    $('filtercard').classList.toggle('due',f.due);
+    $('fdays').textContent=f.due?'Filterwechsel fällig!':`noch ${f.daysLeft} ${f.daysLeft==1?'Tag':'Tage'}`;
+    $('fbar').style.width=Math.min(100,Math.max(0,100-f.minutesLeft/(f.interval*1440)*100))+'%';
+    $('fbar').style.background=f.due?'#E8860C':'';
+    $('fnext').textContent=(f.due?'fällig seit ':f.clock?'am ':'ca. ')+new Date(Date.now()+f.minutesLeft*60000).toLocaleDateString('de-DE')+(f.clock?'':' (Betriebszeit)');
+    $('flast').textContent=f.last?day(f.last):'unbekannt';
+    $('fint').textContent=f.interval+' Tage';
+    $('clock').textContent=d.now?new Date(d.now*1000).toLocaleString('de-DE',{dateStyle:'medium',timeStyle:'short'}):'noch nicht synchronisiert';
+    $('since').textContent=d.since?' · seit '+day(d.since):'';
+    if(first){$('upd').checked=d.settings.upd;$('auto').checked=d.settings.auto;$('fdaysin').value=f.interval;first=false;}
   }catch(e){$('msg').textContent='Keine Verbindung zum Controller …';}
 }
 async function post(url,data){const r=await fetch(url,{method:'POST',body:new URLSearchParams(data)});return r.text();}
 async function cmd(c,q){if(q&&!confirm(q))return;$('msg').textContent=await post('/api/cmd',{c});poll();}
 async function save(){const pw=$('pw').value;if(pw&&pw.length<8){$('msg').textContent='Passwort zu kurz (mind. 8 Zeichen)';return;}
-  $('msg').textContent=await post('/api/settings',{upd:$('upd').checked?1:0,auto:$('auto').checked?1:0,pw});$('pw').value='';}
+  const fd=parseInt($('fdaysin').value,10);if(!(fd>=7&&fd<=1095)){$('msg').textContent='Intervall: 7 bis 1095 Tage';return;}
+  $('msg').textContent=await post('/api/settings',{upd:$('upd').checked?1:0,auto:$('auto').checked?1:0,pw,filterdays:fd});$('pw').value='';}
 function upload(){const f=$('file').files[0];if(!f){$('umsg').textContent='Bitte zuerst eine .bin-Datei auswählen.';return;}
   if(!confirm('Firmware '+f.name+' hochladen und installieren?'))return;
   const x=new XMLHttpRequest(),fd=new FormData();fd.append('firmware',f,f.name);

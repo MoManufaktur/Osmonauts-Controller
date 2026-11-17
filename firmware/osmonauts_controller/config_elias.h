@@ -26,6 +26,10 @@
 #define OPERATION_NORMAL
 //#define OPERATION_TESTING
 
+// ----------------------------- filter change reminder -----------------------------
+#define FILTER_CHANGE_DAYS 180     // interval [days] - counts operating time, reset by the filter exchange procedure
+#define FILTER_LED LED_BUILTIN     // light signal: on-board LED (D13) blinks when the filter change is due
+
 // ----------------------------- aqua stop -----------------------------
 #define AQUASTOP_ENABLE
 #define RAIN_SENSOR

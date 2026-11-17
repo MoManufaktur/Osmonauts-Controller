@@ -25,7 +25,9 @@ everything down if a leak is detected.
 - **Aqua stop**: rain sensor or water level sensor, closes all valves and locks the controller until reset
 - **Stop button**: cancels any running procedure and closes all valves
 - Acoustic feedback (passive buzzer), optional **WS2812B LED ring** and **128×32 OLED** display
-- **ESP32 version** (4-relay board): WiFi setup via hotspot, **web interface** on phone or PC,
+- **Filter change reminder**: countdown (default 180 days) on OLED, light signal and beeps when due,
+  reset automatically by the filter exchange procedure
+- **ESP32 version** (4-relay board, own firmware): WiFi setup via hotspot, **web interface** on phone or PC,
   **firmware updates** over WiFi (upload or directly from GitHub, checksum-verified, automatic rollback),
   optional anonymous count of active devices, local statistics
 - Non-blocking state machines, one operating mode at a time, every procedure with its own timer
@@ -88,7 +90,7 @@ please compare it with your own plumbing before building.
 | 1 | tap water | **stop** |
 | 2 (optional) | **stop** | – |
 | 3 | – | disinfection |
-| 4 | – | filter exchange |
+| 4 | filter status (1 long beep = ok, 3 short = change due) | filter exchange (restarts the filter countdown) |
 
 Tapping interrupts an automatic flush or post-flush. During disinfection or filter exchange a tapping
 request is refused (three short beeps) – stop the running procedure first.
@@ -121,6 +123,15 @@ request is refused (three short beeps) – stop the running procedure first.
 
 ## Getting started
 
+Two firmwares share the same procedures (`firmware/common`):
+
+| Folder | Boards |
+|---|---|
+| [`firmware/osmonauts_controller`](firmware/osmonauts_controller) | Arduino Uno, Nano, Mega 2560 |
+| [`firmware/osmonauts_esp32`](firmware/osmonauts_esp32) | ESP32 4-relay board – [own README](firmware/osmonauts_esp32/README.md) |
+
+**Arduino version:**
+
 1. Open `firmware/osmonauts_controller/osmonauts_controller.ino` in the Arduino IDE.
 2. Choose your configuration at the top of the sketch (`config.h`, `config_elias.h`, `config_kai.h`)
    or copy `config.h` and adapt pins, relay type, sensor type and durations.
@@ -131,54 +142,35 @@ request is refused (three short beeps) – stop the running procedure first.
 
 ## ESP32 version: WiFi, web interface, updates
 
-The ESP32 4-relay board runs the same procedures plus a network module. **Everything that keeps the system
-safe works without WiFi**: buttons, all procedures and the aqua stop run exactly as on the Arduino.
+The ESP32 4-relay board has its **own firmware** in [`firmware/osmonauts_esp32`](firmware/osmonauts_esp32) – same procedures,
+plus WiFi setup via hotspot, a web interface (`http://osmonauts.local`), firmware updates over WiFi and the filter
+reminder with calendar date. **Installation, WiFi setup, web interface, updates and privacy:
+[firmware/osmonauts_esp32/README.md](firmware/osmonauts_esp32/README.md).**
 
-**First installation**
-1. The board has no USB port: connect a 3.3 V USB-serial adapter to the programming header (TX→RX, RX→TX, GND, 5 V).
-2. Either flash the ready image `osmonauts-esp32-relay4-full.bin` from the latest [release](https://github.com/MoManufaktur/Osmonauts-Controller/releases) at address `0x0`
-   (e.g. `esptool.py write_flash 0x0 osmonauts-esp32-relay4-full.bin`),
-   or compile in the Arduino IDE: board *ESP32 Dev Module*, partition scheme **Minimal SPIFFS (1.9MB APP with OTA)**,
-   libraries *WiFiManager*, *ESP Async WebServer*, *Async TCP*; select `config_esp32_relay4.h` in the sketch.
-   Hold the button on GPIO 0 while powering up to enter the upload mode.
+## Filter change reminder
 
-**WiFi setup**
-1. After the first start the controller opens the hotspot **`Osmonauts-XXXX`**. Connect with your phone; the setup page opens
-   (otherwise browse to `http://192.168.4.1`).
-2. Choose your WiFi, enter the password, set a password for the web interface and decide about the daily update check.
-3. The controller connects and is reachable at **http://osmonauts.local** (or its IP address). User: `admin`.
-   The web password is also printed on the serial monitor at every start.
-4. To change the WiFi: hold the BOOT button (GPIO 0) for 5 seconds, or use *WLAN zurücksetzen* in the web interface.
+Both firmwares count down to the next filter change (default **180 days**, `FILTER_CHANGE_DAYS` in the config file).
+The countdown restarts automatically when the **filter exchange procedure** (button 4 long) has finished.
 
-**Web interface** – current step with remaining time, valve states, aqua stop sensor value, next automatic flush,
-buttons for *Stop*, *Flush now*, *Filter exchange* and *Disinfection*, local statistics, firmware update and settings.
-Tapping water can only be started at the device (button 1) – no water runs because of a remote click.
+| | Arduino Uno / Nano / Mega | ESP32 |
+|---|---|---|
+| Counts | operating time (stored in EEPROM, saved every hour) | calendar days (date from the internet), operating time until the time is known |
+| Display (OLED) | 3rd line `Filter in 123 d`, blinking `FILTER CHANGE DUE!` | same |
+| Light signal when due | on-board LED (D13) blinks, LED ring pulses orange | status LED double-flashes, LED ring pulses orange |
+| Sound when due | 3 short beeps after tapping and at start-up | same |
+| Check anytime | button 4 short: 1 long beep = ok, 3 short beeps = due (+ serial monitor) | same + web interface: date of the next and last change, days left, interval adjustable |
 
-**Firmware updates** – only in idle mode with all valves closed:
-- *Search for update* loads the update manifest of the latest GitHub release; *Install update* downloads the firmware
-  via HTTPS, checks its SHA-256 checksum and installs it. Optional: install updates automatically in idle mode.
-- Or upload a `.bin` file in the web interface.
-- If the new firmware does not run for 60 seconds, the ESP32 automatically returns to the previous version.
-
-**Privacy / anonymous device count** – if the daily update check is enabled (setup page and settings, can be
-switched off any time), the controller downloads the small file `ping-esp32-relay4.json` from the latest release once a day.
-GitHub counts these downloads; the project only sees the total number – that is how the
-[statistics page](https://momanufaktur.github.io/Osmonauts-Controller/) counts active devices. No device, location or usage data
-is transmitted. As with every download, GitHub processes the IP address of your internet connection.
-
-**Releases** are built automatically by GitHub Actions: change `FW_VERSION` in the sketch, then push a tag `vX.Y`.
-
-### Simulation tests (no hardware needed)
+## Simulation tests (no hardware needed)
 
 The firmware compiles for the PC against a small Arduino mock; time is simulated, every relay change is recorded.
 
 ```bash
-tests/run.sh config_elias.h tap tap2 stop stopfilter disinfect busy filterchange auto tapduringauto tapduringpost aquastop bounce
+tests/run.sh config_elias.h tap tap2 stop stopfilter disinfect busy filterchange auto tapduringauto tapduringpost aquastop bounce filter
 ```
 
-12 scenarios / 37 checks: tapping, consecutive tapping, stop, stop while filtering, disinfection timing,
+13 scenarios / up to 47 checks: tapping, consecutive tapping, stop, stop while filtering, disinfection timing,
 busy lock, filter exchange, automatic flush, tapping during automatic flush and post-flush, aqua stop,
-bouncing buttons, and the relay state shown in the web interface. Runs for every push in GitHub Actions. Requires `g++`.
+bouncing buttons, filter change reminder (EEPROM, light signal, reset), and the relay state shown in the web interface. Runs for every push in GitHub Actions. Requires `g++`.
 
 ## Safety
 
@@ -202,10 +194,12 @@ license; please keep this message in your version (it is part of the attribution
 ## Repository structure
 
 ```
-firmware/osmonauts_controller/   Arduino sketch, configuration files, LED helper, ESP32 network module and web interface
+firmware/common/                 shared core: procedures, buttons, aqua stop, filter reminder, LED helper (edit here)
+firmware/osmonauts_controller/   Arduino Uno / Nano / Mega sketch + configs (src/ = copy of common)
+firmware/osmonauts_esp32/        ESP32 sketch, config, network module, web interface (src/ = copy of common)
 tests/                           PC simulation (Arduino mock + test scenarios)
 docs/                            block diagram (SVG/PNG), 3D animation, code review, media
-tools/                           generators for block diagram, 3D animation and statistics page, statistics archive
+tools/                           sync_common.py, generators for block diagram, 3D animation and statistics page, statistics archive
 .github/                         build report form, build & release workflow, daily statistics workflow
 ```
 
@@ -257,7 +251,10 @@ liegen im Ordner `docs/`, die Bedienung steht oben in den Tabellen.
 **Lizenz:** CC BY-NC-SA 4.0 – frei für die private, nicht kommerzielle Nutzung. Änderungen sind erlaubt;
 wer eine geänderte Version weitergibt, muss sie unter derselben Lizenz und mit Namensnennung veröffentlichen.
 Kommerzielle Nutzung nur mit schriftlicher Genehmigung der Autoren.
-**ESP32-Version:** Auf dem ESP32-4-Relais-Board kommen WLAN-Einrichtung per Hotspot, Weboberfläche
+**Filterwechsel-Erinnerung:** Countdown bis zum nächsten Filterwechsel (Standard 180 Tage) auf dem OLED,
+Lichtsignal und drei Töne, wenn er fällig ist; die Filterwechsel-Spülung (Taster 4 lang) startet ihn neu,
+Taster 4 kurz zeigt den Stand. Auf dem ESP32 zusätzlich mit Datum in der Weboberfläche.
+**ESP32-Version** (eigene Firmware in `firmware/osmonauts_esp32`): Auf dem ESP32-4-Relais-Board kommen WLAN-Einrichtung per Hotspot, Weboberfläche
 (http://osmonauts.local), Firmware-Updates über WLAN und eine freiwillige, anonyme Zählung aktiver Geräte dazu
 (Statistik: momanufaktur.github.io/Osmonauts-Controller). Zapfen geht nur am Gerät, der Aquastop arbeitet ohne WLAN.
 **Nachgebaut?** Bitte über das [Formular](https://github.com/MoManufaktur/osmonauts-controller/issues/new?template=build-report.yml) melden.

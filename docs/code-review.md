@@ -38,6 +38,10 @@ Osmonauts – OpenOsmosis Controller · Entwickler: Kai Mommsen & Elias Dörre �
   GitHub Actions bei jedem Push.
 - Die Simulation prüft zusätzlich, dass der für die Weboberfläche gemeldete Relaiszustand jederzeit den Ausgängen
   entspricht (37 Prüfungen je Konfiguration, auch für `config_esp32_relay4.h`).
+- Arduino- und ESP32-Version sind getrennte Sketches mit gemeinsamer Ablauflogik in `firmware/common`
+  (`tools/sync_common.py`, in GitHub Actions geprüft).
+- Filterwechsel-Erinnerung: eigener Simulationstest (Countdown, EEPROM-Speicherung jede Stunde, Lichtsignal,
+  Erinnerung nach dem Zapfen, Zurücksetzen durch die Filterwechsel-Spülung, Neustart) – 47 Prüfungen mit `config_elias.h`.
 - ESP32-Netzwerkfunktionen (WLAN, Weboberfläche, Updates) sind kompiliert und die Weboberfläche im Browser geprüft;
   ein Test auf echter Hardware steht noch aus.
 

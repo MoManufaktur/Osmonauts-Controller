@@ -1,11 +1,14 @@
-# Osmonauts – builds the firmware for all boards and runs the simulation tests.
+# Osmonauts – builds both firmwares and runs the simulation tests:
+#   firmware/osmonauts_controller  Arduino Uno / Nano / Mega
+#   firmware/osmonauts_esp32       ESP32 4-relay board
+# Both share the core in firmware/common (copied into src/ by tools/sync_common.py).
 # A tag "vX.Y" (equal to FW_VERSION in the sketch) additionally creates a GitHub release with
 #   osmonauts-uno.hex, osmonauts-mega.hex, osmonauts-esp32-relay4.bin (update),
 #   osmonauts-esp32-relay4-full.bin (first flash, address 0x0) and ping-esp32-relay4.json.
 # ESP32 controllers download ping-esp32-relay4.json once a day (update check) - the download
 # counter of this file is the anonymous number of active devices.
 #
-# New release:  set FW_VERSION in firmware/osmonauts_controller/osmonauts_controller.ino, commit, then
+# New release:  set FW_VERSION in firmware/common/osmo_core.h, run tools/sync_common.py, commit, then
 #               git tag v6.2 && git push origin v6.2
 name: Build & release
 on:
@@ -24,11 +27,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Shared core in sync
+        run: python3 tools/sync_common.py --check
+
       - name: Simulation tests
         run: |
-          ALL="tap tap2 stop stopfilter disinfect busy filterchange auto tapduringauto tapduringpost aquastop bounce"
+          ALL="tap tap2 stop stopfilter disinfect busy filterchange auto tapduringauto tapduringpost aquastop bounce filter"
           tests/run.sh config_elias.h $ALL
-          tests/run.sh config_esp32_relay4.h $ALL
+          tests/run.sh ../osmonauts_esp32/config_esp32_relay4.h $ALL
 
       - uses: arduino/setup-arduino-cli@v2
 
@@ -44,19 +50,21 @@ jobs:
       - name: Compile
         run: |
           mkdir -p dist
-          build() {   # build <config> <fqbn> <name>
-            W="$RUNNER_TEMP/$3/osmonauts_controller"; mkdir -p "$W"
-            cp firmware/osmonauts_controller/*.ino firmware/osmonauts_controller/*.h "$W/"
+          arduino_build() {   # arduino_build <config> <fqbn> <name>   (Arduino sketch with the chosen config)
+            W="$RUNNER_TEMP/$3/osmonauts_controller"; mkdir -p "$RUNNER_TEMP/$3"
+            cp -r firmware/osmonauts_controller "$W"
             sed -i "s|^#include \"config.h\".*|#include \"$1\"|" "$W/osmonauts_controller.ino"
             arduino-cli compile -b "$2" --warnings default --output-dir "$RUNNER_TEMP/$3/out" "$W"
           }
-          build config.h             arduino:avr:uno                                  uno
-          build config_kai.h         arduino:avr:mega:cpu=atmega2560                  mega
-          build config_esp32_relay4.h esp32:esp32:esp32:PartitionScheme=min_spiffs    esp32-relay4
-          cp "$RUNNER_TEMP/uno/out/osmonauts_controller.ino.hex"              dist/osmonauts-uno.hex
-          cp "$RUNNER_TEMP/mega/out/osmonauts_controller.ino.hex"             dist/osmonauts-mega.hex
-          cp "$RUNNER_TEMP/esp32-relay4/out/osmonauts_controller.ino.bin"        dist/osmonauts-esp32-relay4.bin
-          cp "$RUNNER_TEMP/esp32-relay4/out/osmonauts_controller.ino.merged.bin" dist/osmonauts-esp32-relay4-full.bin
+          arduino_build config.h       arduino:avr:uno                  uno
+          arduino_build config_elias.h arduino:avr:uno                  elias
+          arduino_build config_kai.h   arduino:avr:mega:cpu=atmega2560  mega
+          arduino-cli compile -b esp32:esp32:esp32:PartitionScheme=min_spiffs --warnings default \
+            --output-dir "$RUNNER_TEMP/esp32-relay4/out" firmware/osmonauts_esp32
+          cp "$RUNNER_TEMP/uno/out/osmonauts_controller.ino.hex"             dist/osmonauts-uno.hex
+          cp "$RUNNER_TEMP/mega/out/osmonauts_controller.ino.hex"            dist/osmonauts-mega.hex
+          cp "$RUNNER_TEMP/esp32-relay4/out/osmonauts_esp32.ino.bin"         dist/osmonauts-esp32-relay4.bin
+          cp "$RUNNER_TEMP/esp32-relay4/out/osmonauts_esp32.ino.merged.bin"  dist/osmonauts-esp32-relay4-full.bin
           ls -la dist
 
       - uses: actions/upload-artifact@v4
@@ -71,7 +79,7 @@ jobs:
           TAG: ${{ github.ref_name }}
           REPO: ${{ github.repository }}
         run: |
-          VERSION=$(grep -oP '#define FW_VERSION\s+"\K[^"]+' firmware/osmonauts_controller/osmonauts_controller.ino)
+          VERSION=$(grep -oP '#define FW_VERSION\s+"\K[^"]+' firmware/common/osmo_core.h)
           if [ "v$VERSION" != "$TAG" ]; then
             echo "::error::Tag $TAG does not match FW_VERSION $VERSION in the sketch"; exit 1
           fi

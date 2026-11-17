@@ -8,7 +8,8 @@
 //    (HTTPS, SHA-256 checked, automatic rollback if the new firmware does not run for 60 s)
 //  - optional daily update check: downloads ping-<variant>.json from the latest GitHub release.
 //    GitHub counts these downloads -> number of active devices, no device or usage data is sent.
-//  - local statistics in flash (taps, flushes, aqua stop events ...)
+//  - local statistics in flash (taps, flushes, aqua stop events ...) with start date
+//  - filter change reminder with date (time from the internet), interval adjustable
 //
 // Safety: procedures, buttons and aqua stop run in loop() exactly as without WiFi. Web requests only
 // set a pending command which loop() executes. Tapping cannot be started remotely. Firmware updates
@@ -28,6 +29,10 @@
 #include <mbedtls/sha256.h>
 #include "osmo_webui.h"
 
+#ifndef OSMO_CLOCK
+inline bool clockValid() { return false; }   // no internet time: reminder counts operating time only
+#endif
+
 #define OSMO_USER "admin"
 #define PING_URL "https://github.com/" GITHUB_REPO "/releases/latest/download/ping-" BOARD_VARIANT ".json"
 
@@ -42,6 +47,7 @@ struct NetSettings {
 
 static const char *STAT_KEYS[] = { "taps", "post", "auto", "filter", "disinf", "aqua", "stops", "boots" };
 uint32_t netStats[8];
+uint32_t statsSince = 0;   // date of the first start with known time (unix time)
 
 void netLoadSettings() {
   prefs.begin("osmo", false);
@@ -55,6 +61,7 @@ void netLoadSettings() {
   netCfg.updateCheck = prefs.getBool("upd", true);
   netCfg.autoUpdate  = prefs.getBool("auto", false);
   for (int i = 0; i < 8; i++) netStats[i] = prefs.getUInt(STAT_KEYS[i], 0);
+  statsSince = prefs.getUInt("since", 0);
   netStats[7]++;
   prefs.putUInt(STAT_KEYS[7], netStats[7]);
 }
@@ -73,15 +80,16 @@ WiFiManagerParameter pPassword("pw", "Passwort für die Weboberfläche (Benutzer
 WiFiManagerParameter pUpdate("upd", "Täglich nach Updates suchen (GitHub zählt die Abrufe anonym)", "1", 2,
                              "type=\"checkbox\" checked style=\"width:auto\"", WFM_LABEL_AFTER);
 
-enum NetCmd : uint8_t { CMD_NONE, CMD_STOP, CMD_FLUSH, CMD_FILTER, CMD_DISINFECT, CMD_CHECK, CMD_INSTALL, CMD_REBOOT, CMD_WIFIRESET };
+enum NetCmd : uint8_t { CMD_NONE, CMD_STOP, CMD_FLUSH, CMD_FILTER, CMD_DISINFECT, CMD_CHECK, CMD_INSTALL, CMD_REBOOT, CMD_WIFIRESET, CMD_FILTERRESET };
 volatile uint8_t pendingCmd = CMD_NONE;
+volatile uint16_t pendingFilterDays = 0;
 
 String apName;
 char netMessage[96] = "";   // read by the web server task -> fixed buffer, no String reallocation
 void setMessage(const String &m) { strlcpy(netMessage, m.c_str(), sizeof netMessage); }
 bool webStarted = false;
 bool rollbackPending = false;
-unsigned long msBoot = 0, msNextCheck = 0, msResetHold = 0, msRestartAt = 0;
+unsigned long msBoot = 0, msNextCheck = 0, msResetHold = 0, msRestartAt = 0, msClockCheck = 0;
 
 struct UpdateState {
   volatile bool busy = false;
@@ -337,7 +345,7 @@ String statusJson() {
     postIn = since >= intervalFlushAfterTapping ? 0 : (intervalFlushAfterTapping - since) / 1000;
   }
   String j;
-  j.reserve(900);
+  j.reserve(1100);
   j += "{\"version\":\"" FW_VERSION "\",\"variant\":\"" BOARD_VARIANT "\"";
   j += ",\"mode\":" + String((int)mode) + ",\"step\":\"" + jsonEscape(step) + "\"";
   j += ",\"total\":" + String(total / 1000) + ",\"elapsed\":" + String(min(elapsed, total) / 1000);
@@ -357,6 +365,11 @@ String statusJson() {
   j += ",\"stats\":{\"taps\":" + String(netStats[0]) + ",\"postFlushes\":" + String(netStats[1]) + ",\"autoFlushes\":" + String(netStats[2]) +
        ",\"filterChanges\":" + String(netStats[3]) + ",\"disinfections\":" + String(netStats[4]) + ",\"aquastops\":" + String(netStats[5]) +
        ",\"stops\":" + String(netStats[6]) + ",\"boots\":" + String(netStats[7]) + "}";
+  time_t now = clockValid() ? time(nullptr) : 0;
+  j += ",\"now\":" + String((uint32_t)now) + ",\"since\":" + String(statsSince);
+  j += ",\"filter\":{\"due\":" + String(filterDue() ? "true" : "false") + ",\"daysLeft\":" + String(filterDaysLeft()) +
+       ",\"minutesLeft\":" + String(filterMinutesLeft()) + ",\"interval\":" + String(filterStore.intervalDays) +
+       ",\"last\":" + String(filterStore.lastChange) + ",\"clock\":" + String(now ? "true" : "false") + "}";
   j += ",\"message\":\"" + jsonEscape(String(netMessage)) + "\"}";
   return j;
 }
@@ -376,7 +389,8 @@ void startWebServer() {
     if (!auth(r)) return;
     String c = r->hasParam("c", true) ? r->getParam("c", true)->value() : "";
     uint8_t cmd = c == "stop" ? CMD_STOP : c == "flush" ? CMD_FLUSH : c == "filter" ? CMD_FILTER : c == "disinfect" ? CMD_DISINFECT :
-                  c == "check" ? CMD_CHECK : c == "install" ? CMD_INSTALL : c == "reboot" ? CMD_REBOOT : c == "wifireset" ? CMD_WIFIRESET : CMD_NONE;
+                  c == "check" ? CMD_CHECK : c == "install" ? CMD_INSTALL : c == "reboot" ? CMD_REBOOT : c == "wifireset" ? CMD_WIFIRESET :
+                  c == "filterreset" ? CMD_FILTERRESET : CMD_NONE;
     if (cmd == CMD_NONE) { r->send(400, "text/plain; charset=utf-8", "Unbekannter Befehl"); return; }
     pendingCmd = cmd;   // executed in loop()
     r->send(200, "text/plain; charset=utf-8", "Befehl übernommen");
@@ -386,6 +400,10 @@ void startWebServer() {
     if (!auth(r)) return;
     if (r->hasParam("upd", true))  { netCfg.updateCheck = r->getParam("upd", true)->value() == "1"; prefs.putBool("upd", netCfg.updateCheck); }
     if (r->hasParam("auto", true)) { netCfg.autoUpdate  = r->getParam("auto", true)->value() == "1"; prefs.putBool("auto", netCfg.autoUpdate); }
+    if (r->hasParam("filterdays", true)) {
+      long d = r->getParam("filterdays", true)->value().toInt();
+      if (d >= 7 && d <= 1095) pendingFilterDays = (uint16_t)d;   // applied in loop()
+    }
     String msg = "Einstellungen gespeichert";
     if (r->hasParam("pw", true)) {
       String pw = r->getParam("pw", true)->value();
@@ -461,6 +479,7 @@ void netSetup() {
 
   WiFi.mode(WIFI_STA);
   WiFi.setHostname("osmonauts");
+  configTzTime("CET-1CEST,M3.5.0,M10.5.0/3", "pool.ntp.org", "time.google.com");   // date for the filter reminder
   uint8_t mac[6];
   WiFi.macAddress(mac);
   char name[24];
@@ -501,6 +520,10 @@ void netLoop() {
   bool led = mode != MODE_IDLE;
   if (wm.getConfigPortalActive()) led = (millis() / 150) % 2;
   if (mode == MODE_AQUASTOP) led = (millis() / 600) % 2;
+  if (mode == MODE_IDLE && !wm.getConfigPortalActive() && filterDue()) {   // double flash: filter change due
+    unsigned long t = millis() % 2000;
+    led = t < 120 || (t > 240 && t < 360);
+  }
   digitalWrite(STATUS_LED, led);
 #endif
 
@@ -532,6 +555,7 @@ void netLoop() {
     case CMD_CHECK:     startUpdateCheck(); setMessage("Suche nach Updates …"); break;
     case CMD_INSTALL:   setMessage(startUpdateInstall() ? "Update wird geladen …" : "Update nur im Leerlauf möglich"); break;
     case CMD_REBOOT:    msRestartAt = millis() + 500; setMessage("Neustart …"); break;
+    case CMD_FILTERRESET: filterReset(); setMessage("Filterwechsel bestätigt – Countdown startet neu"); break;
     case CMD_WIFIRESET:
       stopRelais();
       wm.resetSettings();
@@ -539,6 +563,21 @@ void netLoop() {
       ESP.restart();
       break;
     default: break;
+  }
+
+  // filter interval changed in the web interface
+  if (pendingFilterDays) {
+    filterStore.intervalDays = pendingFilterDays;
+    pendingFilterDays = 0;
+    filterSave();
+    filterWasDue = filterDue();
+    if (mode == MODE_IDLE) feedback(FB_IDLE);
+  }
+
+  // first start with known time: remember the date for the statistics
+  if (!statsSince && millis() - msClockCheck > 10000) {
+    msClockCheck = millis();
+    if (clockValid()) { statsSince = (uint32_t)time(nullptr); prefs.putUInt("since", statsSince); }
   }
 
   // daily update check (= anonymous active-device count on GitHub)

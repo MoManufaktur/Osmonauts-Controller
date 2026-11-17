@@ -16,7 +16,8 @@
 #define OSMO_NET                          // WiFi, web interface, firmware update
 #define BOARD_VARIANT "esp32-relay4"      // name of the firmware and ping file in the GitHub release
 #define GITHUB_REPO   "MoManufaktur/Osmonauts-Controller"
-#define STATUS_LED     23                 // on-board LED: on = procedure running, blinking = WiFi setup
+#define STATUS_LED     23                 // on-board LED: on = procedure running, fast blink = WiFi setup,
+                                          //   slow blink = aqua stop, double flash = filter change due
 #define WIFI_RESET_PIN 0                  // BOOT button: hold 5 s = delete WiFi settings and restart
 
 // ----------------------------- pin layout -----------------------------
@@ -43,6 +44,11 @@
 
 #define OPERATION_NORMAL
 //#define OPERATION_TESTING
+
+// ----------------------------- filter change reminder -----------------------------
+#define FILTER_CHANGE_DAYS 180     // default interval [days], changeable in the web interface
+#define OSMO_CLOCK                 // date from the internet (NTP): reminder counts calendar days
+// light signal: the on-board status LED double-flashes in idle mode while the filter change is due
 
 // ----------------------------- aqua stop -----------------------------
 // ESP32: analog input only on ADC1 (GPIO 32-39) while WiFi is active. GPIO 34-39 are input only

@@ -10,6 +10,8 @@ int sim_pin_in[64];
 int sim_analog[64];
 std::string sim_serial;
 SerialMock Serial;
+#include "EEPROM.h"
+EEPROMClass EEPROM;
 
 struct Ev { unsigned long t; std::string s; };
 std::vector<Ev> timeline;
@@ -231,6 +233,44 @@ int main(int argc, char **argv) {
     press(pushbtnPIN1, 200);
     runFor(intervalAutomaticFlush + 60000UL);
     check(simRelays() == "----" && mode == MODE_AQUASTOP, "stays stopped (latched), no auto flush");
+  }
+  else if (test == "filter") {
+    printf("T13 filter change reminder: countdown, EEPROM, light signal, reset by filter exchange\n");
+    long total = (long)FILTER_CHANGE_DAYS * 1440;
+    check(filterStore.magic == FILTER_MAGIC && filterStore.minutes == 0 && filterDaysLeft() == FILTER_CHANGE_DAYS, "first start: full interval");
+    runFor(61UL * 60 * 1000);
+    FilterStore stored; EEPROM.get(EEPROM_ADDR, stored);
+    check(stored.minutes == 60, "operating time saved to EEPROM every hour");
+    printf("    days left after 61 min: %d, EEPROM writes: %d\n", filterDaysLeft(), EEPROM.writes);
+    filterStore.minutes = total - 1;                     // fast forward: due within the next minute
+    runFor(61000);
+    check(filterDue() && sim_serial.find("FILTER CHANGE DUE") != std::string::npos, "becomes due, message on serial");
+#ifdef FILTER_LED
+    int on = 0, off = 0;
+    for (int i = 0; i < 40; i++) { runFor(50); (sim_pin_out[FILTER_LED] == HIGH ? on : off)++; }
+    check(on > 5 && off > 5, "light signal blinks while due");
+#endif
+    int before = countStr(sim_serial, "FILTER CHANGE DUE");
+    press(pushbtnPIN1, 200);
+    runFor((M + S + FI + 5) * 1000);
+    check(countStr(sim_serial, "FILTER CHANGE DUE") > before, "reminder after tapping");
+#ifdef PUSHBTN_3_4_ENABLE
+    press(pushbtnPIN4, 200);
+    check(sim_serial.find("Button 4: short press -> filter status") != std::string::npos, "button 4 short shows filter status");
+    runFor((WAIT + M2 + 30) * 1000);                     // let the post-flush finish
+    press(pushbtnPIN4, intervalToLongPress + 200);
+    runFor(durMembraneFlushNewFilter + durStandWaterFlushNewFilter + 30000UL);
+    EEPROM.get(EEPROM_ADDR, stored);
+    check(!filterDue() && filterStore.minutes == 0 && stored.minutes == 0 && filterDaysLeft() == FILTER_CHANGE_DAYS,
+          "filter exchange procedure resets the countdown (also in EEPROM)");
+#ifdef FILTER_LED
+    runFor(2000);
+    check(sim_pin_out[FILTER_LED] != HIGH, "light signal off after reset");
+#endif
+#endif
+    stored.minutes = 12345; EEPROM.put(EEPROM_ADDR, stored);   // simulated restart
+    filterLoad();
+    check(filterStore.minutes == 12345, "countdown survives a restart");
   }
   else if (test == "bounce") {
     printf("T12 bouncing button contacts: exactly one short press\n");
