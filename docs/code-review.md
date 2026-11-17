@@ -29,6 +29,22 @@ Osmonauts – OpenOsmosis Controller · Entwickler: Kai Mommsen & Elias Dörre �
 - „Stopp“ überspringt nur einen Schritt, statt abzubrechen.
 - Wegen fehlender `return`-Anweisungen hängt bzw. stürzt Version 5 mit aktuellem GCC ab.
 
+## Nachtrag Version 6.1
+
+- **Fehler in 6.0 gefunden:** Version 6.0 ließ sich in der Arduino-IDE nicht kompilieren. Die IDE fügt automatisch
+  Funktionsdeklarationen vor der ersten Funktion ein; die eigenen Datentypen (`Timer`, `Proc`, `Mode` …) standen dort
+  noch nicht. Der bisherige Prüf-Build hatte diesen IDE-Schritt nicht nachgebildet. **Behoben:** Alle Typen stehen jetzt
+  in `osmo_types.h`. Seit 6.1 wird jede Variante mit der echten Arduino-Toolchain (arduino-cli) gebaut – lokal und in
+  GitHub Actions bei jedem Push.
+- Die Simulation prüft zusätzlich, dass der für die Weboberfläche gemeldete Relaiszustand jederzeit den Ausgängen
+  entspricht (37 Prüfungen je Konfiguration, auch für `config_esp32_relay4.h`).
+- Arduino- und ESP32-Version sind getrennte Sketches mit gemeinsamer Ablauflogik in `firmware/common`
+  (`tools/sync_common.py`, in GitHub Actions geprüft).
+- Filterwechsel-Erinnerung: eigener Simulationstest (Countdown, EEPROM-Speicherung jede Stunde, Lichtsignal,
+  Erinnerung nach dem Zapfen, Zurücksetzen durch die Filterwechsel-Spülung, Neustart) – 47 Prüfungen mit `config_elias.h`.
+- ESP32-Netzwerkfunktionen (WLAN, Weboberfläche, Updates) sind kompiliert und die Weboberfläche im Browser geprüft;
+  ein Test auf echter Hardware steht noch aus.
+
 ## Review Version 5 – Befunde
 
 ### Kritisch

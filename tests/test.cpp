@@ -10,13 +10,15 @@ int sim_pin_in[64];
 int sim_analog[64];
 std::string sim_serial;
 SerialMock Serial;
+#include "EEPROM.h"
+EEPROMClass EEPROM;
 
 struct Ev { unsigned long t; std::string s; };
 std::vector<Ev> timeline;
 
 #include SKETCH
 
-std::string relaisState() {
+std::string simRelays() {
   std::string s = "----";
   if (sim_pin_out[relais1] == ON) s[0] = '1';
   if (sim_pin_out[relais2] == ON) s[1] = '2';
@@ -25,13 +27,19 @@ std::string relaisState() {
   return s;
 }
 void sim_on_write(uint8_t) {
-  std::string s = relaisState();
+  std::string s = simRelays();
   if (timeline.empty() || timeline.back().s != s) timeline.push_back({sim_ms, s});
 }
 
+int stateMismatch = 0;   // relaisState (shown in the web interface) must match the outputs
 void runFor(unsigned long d) {
   unsigned long end = sim_ms + d;
-  while (sim_ms < end) { loop(); sim_ms += 1; }
+  while (sim_ms < end) {
+    loop();
+    uint8_t expect = (sim_pin_out[relais1] == ON) | (sim_pin_out[relais2] == ON) << 1 | (sim_pin_out[relais3] == ON) << 2 | (sim_pin_out[relais4] == ON) << 3;
+    if (expect != relaisState) stateMismatch++;
+    sim_ms += 1;
+  }
 }
 void press(int pin, unsigned long dur) {
   sim_pin_in[pin] = LOW; runFor(dur); sim_pin_in[pin] = HIGH; runFor(300);
@@ -117,9 +125,9 @@ int main(int argc, char **argv) {
     runFor(1000); press(pushbtnPIN1, 200);
     runFor(5000);
     press(pushbtnPIN1, intervalToLongPress + 200);   // long press = stop
-    check(relaisState() == "----" && mode == MODE_IDLE, "stop: all valves closed, idle");
+    check(simRelays() == "----" && mode == MODE_IDLE, "stop: all valves closed, idle");
     runFor(10 * 60 * 1000UL);
-    check(relaisState() == "----", "stays off (no remaining step running)");
+    check(simRelays() == "----", "stays off (no remaining step running)");
     press(pushbtnPIN1, intervalToLongPress + 200);   // stray stop in idle
     runFor(5000);
     unsigned long t = sim_ms;
@@ -137,7 +145,7 @@ int main(int argc, char **argv) {
 #else
     press(pushbtnPIN1, intervalToLongPress + 200);
 #endif
-    check(relaisState() == "----", "filter stopped");
+    check(simRelays() == "----", "filter stopped");
     runFor((WAIT + M2 + 30) * 1000);
     auto v = segments(); printSegs(v);
     std::vector<Seg> act; for (auto &g : v) if (g.s != "----") act.push_back(g);
@@ -164,7 +172,7 @@ int main(int argc, char **argv) {
     runFor(30000);
     press(pushbtnPIN1, 200);
     runFor(5000);
-    check(mode == MODE_DISINFECTION && relaisState() == "---4", "disinfection keeps running");
+    check(mode == MODE_DISINFECTION && simRelays() == "---4", "disinfection keeps running");
     check(sim_serial.find("Busy") != std::string::npos, "busy message");
   }
   else if (test == "filterchange") {
@@ -224,7 +232,45 @@ int main(int argc, char **argv) {
     sim_analog[aquaStopPin] = sim_analog[0];   // sensor dry again
     press(pushbtnPIN1, 200);
     runFor(intervalAutomaticFlush + 60000UL);
-    check(relaisState() == "----" && mode == MODE_AQUASTOP, "stays stopped (latched), no auto flush");
+    check(simRelays() == "----" && mode == MODE_AQUASTOP, "stays stopped (latched), no auto flush");
+  }
+  else if (test == "filter") {
+    printf("T13 filter change reminder: countdown, EEPROM, light signal, reset by filter exchange\n");
+    long total = (long)FILTER_CHANGE_DAYS * 1440;
+    check(filterStore.magic == FILTER_MAGIC && filterStore.minutes == 0 && filterDaysLeft() == FILTER_CHANGE_DAYS, "first start: full interval");
+    runFor(61UL * 60 * 1000);
+    FilterStore stored; EEPROM.get(EEPROM_ADDR, stored);
+    check(stored.minutes == 60, "operating time saved to EEPROM every hour");
+    printf("    days left after 61 min: %d, EEPROM writes: %d\n", filterDaysLeft(), EEPROM.writes);
+    filterStore.minutes = total - 1;                     // fast forward: due within the next minute
+    runFor(61000);
+    check(filterDue() && sim_serial.find("FILTER CHANGE DUE") != std::string::npos, "becomes due, message on serial");
+#ifdef FILTER_LED
+    int on = 0, off = 0;
+    for (int i = 0; i < 40; i++) { runFor(50); (sim_pin_out[FILTER_LED] == HIGH ? on : off)++; }
+    check(on > 5 && off > 5, "light signal blinks while due");
+#endif
+    int before = countStr(sim_serial, "FILTER CHANGE DUE");
+    press(pushbtnPIN1, 200);
+    runFor((M + S + FI + 5) * 1000);
+    check(countStr(sim_serial, "FILTER CHANGE DUE") > before, "reminder after tapping");
+#ifdef PUSHBTN_3_4_ENABLE
+    press(pushbtnPIN4, 200);
+    check(sim_serial.find("Button 4: short press -> filter status") != std::string::npos, "button 4 short shows filter status");
+    runFor((WAIT + M2 + 30) * 1000);                     // let the post-flush finish
+    press(pushbtnPIN4, intervalToLongPress + 200);
+    runFor(durMembraneFlushNewFilter + durStandWaterFlushNewFilter + 30000UL);
+    EEPROM.get(EEPROM_ADDR, stored);
+    check(!filterDue() && filterStore.minutes == 0 && stored.minutes == 0 && filterDaysLeft() == FILTER_CHANGE_DAYS,
+          "filter exchange procedure resets the countdown (also in EEPROM)");
+#ifdef FILTER_LED
+    runFor(2000);
+    check(sim_pin_out[FILTER_LED] != HIGH, "light signal off after reset");
+#endif
+#endif
+    stored.minutes = 12345; EEPROM.put(EEPROM_ADDR, stored);   // simulated restart
+    filterLoad();
+    check(filterStore.minutes == 12345, "countdown survives a restart");
   }
   else if (test == "bounce") {
     printf("T12 bouncing button contacts: exactly one short press\n");
@@ -235,6 +281,7 @@ int main(int argc, char **argv) {
   }
   else { printf("unknown test\n"); return 2; }
 
+  check(stateMismatch == 0, "relay state for web interface matches outputs");
   if (getenv("VERBOSE")) printf("%s\n", sim_serial.c_str());
   return fails ? 1 : 0;
 }
